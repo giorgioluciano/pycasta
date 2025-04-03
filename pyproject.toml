@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pycast"
-version = "0.1.0"
+name = "pyCAST"
+version = "1.0.0"
 description = "PyCAST: Pocket detection and validation in proteins"
 authors = [
     { name="Giorgio", email="giorgio@example.com" }
