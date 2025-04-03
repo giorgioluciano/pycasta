@@ -7,7 +7,7 @@ name = "pycast"
 version = "0.1.0"
 description = "PyCAST: Pocket detection and validation in proteins"
 authors = [
-    { name="Giorgio", email="giorgio@example.com" }
+    { name="Giorgio", email="giorgio@gmail.com" }
 ]
 license = {text = "MIT"}
 readme = "README.md"
