@@ -1,6 +1,6 @@
-# PyCAST
+# PyCASTa
 
-**PyCAST** (Pocket and Cavity Analysis with Shape-based Techniques) is a scientific pipeline for detecting and validating protein binding pockets using Delaunay triangulation, alpha shapes, and ligand-based validation.  
+**PyCASTa** (Pocket and Cavity Analysis with Shape-based Techniques) is a scientific pipeline for detecting and validating protein binding pockets using Delaunay triangulation, alpha shapes, and ligand-based validation.  
 It supports both single (bounded) and paired protein structure analysis.
 
 ---
