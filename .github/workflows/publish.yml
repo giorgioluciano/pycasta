@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/pyCAST
+      url: https://pypi.org/p/pyCASTa
     permissions:
       id-token: write
     steps:
