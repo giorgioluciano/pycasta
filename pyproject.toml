@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pycast-run = "pycast.run_analysis:main"
+pycast-run = "pycasta.run_analysis:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
