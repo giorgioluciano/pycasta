@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyCASTa"
+name = "pycasta"
 version = "0.1.0"
 description = "PyCAST: Pocket detection and validation in proteins"
 authors = [
