@@ -23,7 +23,7 @@ It supports both single (bounded) and paired protein structure analysis.
 Clone the repository and install locally using `pip`:
 
 ```bash
-git clone https://github.com/your-username/pycast.git
+git clone https://github.com/giorgioluciano/pycasta.git
 cd pycast
 pip install -e .
 
