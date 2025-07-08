@@ -37,7 +37,7 @@ conda activate pycasta-env
 After installing the dependencies, you can run the included example analysis with:
 
 ```bash
-cd source
+cd src
 python run_analysis.py
 ```
 
@@ -84,8 +84,7 @@ For larger or custom datasets, please follow the same folder structure and file 
 
 ---
 
-## File placement
 
-- Place `requirements.txt` and `environment.yml` in the root directory of your pycasta repository (the same folder as your `README.md`).
+
 
 
