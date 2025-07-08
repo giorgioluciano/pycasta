@@ -1,0 +1,15 @@
+numpy
+scipy
+pandas
+biopandas
+biopython
+matplotlib
+colorama
+scikit-learn
+plyfile
+requests
+tabulate
+trimesh
+freesasa
+pymol2
+setuptools
