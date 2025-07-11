@@ -61,7 +61,7 @@ coverage.xml
 .idea/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # Logs
 *.log
@@ -70,6 +70,15 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-# Local configuration
+# Local configuration and temp
 config.yaml
 *.local
+
+# Egg-info cleanup
+*.egg-info/
+*.egg-info
+
+# Misc (add as needed)
+*.bak
+*.swp
+*~
