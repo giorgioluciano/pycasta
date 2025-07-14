@@ -29,5 +29,8 @@ jobs:
       - name: Build package
         run: python -m build
 
+      - name: List built files
+        run: ls -lh dist/
+
       - name: Publish to PyPI with Trusted Publishing
         uses: pypa/gh-action-pypi-publish@release/v1
