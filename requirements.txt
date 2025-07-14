@@ -11,5 +11,5 @@ requests
 tabulate
 trimesh
 freesasa
-pymol2
+# pymol2
 setuptools
