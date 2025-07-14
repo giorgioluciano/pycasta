@@ -12,8 +12,8 @@ tabulate
 trimesh
 freesasa
 setuptools
-# pymol2
-pyvista
-py3Dmol
-trame
+pymol2
+# pyvista
+# py3Dmol
+# trame
 
