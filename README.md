@@ -37,7 +37,7 @@ conda activate pycasta-env
 After installing the dependencies, you can run the included example analysis with:
 
 ```bash
-
+cd ./src/pycasta
 python run_analysis.py
 ```
 
