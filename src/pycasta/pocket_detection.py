@@ -69,10 +69,6 @@ def detect_pockets(
         )
 
     logging.info(f"Using alpha shape with alpha = {alpha_value}")
-    if alpha_mask is None:
-        alpha_mask, _ = compute_alpha_complex_from_tetrahedra(
-            tetra_positions, alpha_value, molecule_name, protein_coords
-        )
     logging.info(
         f"Alpha shape retained {int(np.sum(alpha_mask))} tetrahedra out of {len(alpha_mask)}."
     )
