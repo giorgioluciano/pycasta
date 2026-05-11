@@ -1,0 +1,10 @@
+pip install requests
+python -c "
+import requests, os, zipfile
+url = 'https://zhanggroup.org/BioLiP/coach420.tar.gz'
+r = requests.get(url, stream=True)
+with open('coach420.tar.gz', 'wb') as f:
+    for chunk in r.iter_content(chunk_size=8192):
+        f.write(chunk)
+print('Download completato')
+"

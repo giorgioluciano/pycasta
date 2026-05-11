@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PyCASTA Pocket Viewer</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #050509;
+      color: #e0e0e0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    #app {
+      display: grid;
+      grid-template-columns: 320px 1fr 320px;
+      grid-template-rows: auto 1fr;
+      height: 100vh;
+      gap: 8px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    header {
+      grid-column: 1 / 4;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+    header .subtitle {
+      font-size: 12px;
+      color: #9e9e9e;
+      margin-left: 10px;
+    }
+    header .stats {
+      font-size: 12px;
+      color: #b0bec5;
+    }
+    .panel {
+      background: #0b0d15;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 0 1px #141827;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #viewer {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0f1117;
+      position: relative;
+    }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #90caf9;
+      margin-bottom: 6px;
+    }
+    .field {
+      margin-bottom: 8px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      color: #b0bec5;
+      margin-bottom: 3px;
+    }
+    select, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+    select:focus, button:focus {
+      outline: 1px solid #60a5fa;
+      outline-offset: 1px;
+    }
+    button {
+      cursor: pointer;
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      font-weight: 500;
+    }
+    button.secondary {
+      background: #111827;
+      border-color: #374151;
+      color: #d1d5db;
+    }
+    button.small {
+      font-size: 11px;
+      padding: 4px 6px;
+      width: auto;
+    }
+    .toolbar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+    .checkbox-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .checkbox-row label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      margin: 0;
+    }
+    .checkbox-row input {
+      margin: 0;
+    }
+    .section {
+      margin-bottom: 10px;
+    }
+    #pocket-cards {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .pocket-card {
+      background: #050814;
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 6px;
+      border-left: 3px solid #607d8b;
+      box-shadow: 0 0 0 1px #111827;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    }
+    .pocket-card:hover {
+      background: #0b1021;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 10px rgba(0,0,0,0.5);
+    }
+    .pocket-card.selected {
+      background: #101631;
+      box-shadow: 0 0 0 1px #2563eb;
+    }
+    .pocket-card.dimmed {
+      opacity: 0.4;
+    }
+    .p-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .p-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #b0bec5;
+      margin: 2px 0;
+    }
+    .p-row span:last-child {
+      color: #e5e7eb;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      margin-left: 4px;
+      background: #1b4630;
+      color: #9ae6b4;
+      border: 1px solid #10b981;
+    }
+    .badge.hit {
+      background: #064e3b;
+      color: #bbf7d0;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 7, 13, 0.55);
+      backdrop-filter: blur(2px);
+      z-index: 10;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+    #alpha-info {
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #020617;
+      border: 1px solid #111827;
+      margin-top: 6px;
+      display: none;
+    }
+    #selection-hint {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 4px;
+      display: none;
+    }
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .color-chip {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid #374151;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px #020617;
+      flex-shrink: 0;
+	 
+    }
+	.color-chip[data-key="background"] {
+	 border: 2px solid #ffffff44;
+	 background-color: #0f1117;
+}
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>PyCASTA Pocket Viewer</h1>
+      <span class="subtitle">Explore protein pockets, centroids and α-shapes</span>
+    </div>
+    <div id="stats" class="stats">Select a dataset</div>
+  </header>
+
+  <div class="panel">
+    <div class="section">
+      <div class="section-title">Dataset & molecule</div>
+      <div class="field">
+        <label>Dataset</label>
+        <select id="sel-dataset">
+          <option value="">— select —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Molecule</label>
+        <select id="sel-molecule">
+          <option value="">— select molecule —</option>
+        </select>
+      </div>
+      <div class="toolbar">
+        <button id="btn-reset" class="small secondary">Reset view</button>
+        <button id="btn-style" class="small secondary">Toggle style</button>
+        <button id="btn-clear-sel" class="small secondary">Clear sel.</button>
+        <button id="btn-export" class="small">Export JSON</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Appearance</div>
+      <div class="field">
+        <label>Background <span class="color-chip" data-key="background" style="vertical-align:middle;margin-left:4px"></span></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Layers</div>
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="ly-protein" checked> Protein <span class="color-chip" data-key="protein"></span></label>
+        <label><input type="checkbox" id="ly-ligand" checked> Ligand <span class="color-chip" data-key="ligand"></span></label>
+      </div>
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="ly-pockets" checked> Pocket pts <span class="color-chip" data-key="pocketPoints"></span></label>
+        <label><input type="checkbox" id="ly-centroids" checked> Centroids <span class="color-chip" data-key="centroids"></span></label>
+      </div>
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="ly-mouth" checked> Mouth <span class="color-chip" data-key="mouth"></span></label>
+        <label><input type="checkbox" id="ly-mesh" checked> Mesh <span class="color-chip" data-key="mesh"></span></label>
+      </div>
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="ly-alpha-in" checked> α inside <span class="color-chip" data-key="alphaIn"></span></label>
+        <label><input type="checkbox" id="ly-alpha-out"> α outside <span class="color-chip" data-key="alphaOut"></span></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <label>α line width <span id="lw-val">1.5</span>px</label>
+      <input type="range" id="slider-lw" min="0.5" max="4" step="0.25" value="1.5"
+             style="width:100%;accent-color:#7eb8f7;margin-top:4px">
+      <label style="margin-top:8px">α opacity <span id="op-val">40</span>%</label>
+      <input type="range" id="slider-op" min="5" max="90" step="5" value="40"
+             style="width:100%;accent-color:#7eb8f7;margin-top:4px">
+      <div id="alpha-info"></div>
+    </div>
+  </div>
+
+  <div class="panel viewer-panel">
+    <div id="viewer"></div>
+    <div id="loading">Loading molecule…</div>
+  </div>
+
+  <div class="panel">
+    <div class="section">
+      <div class="section-title">Pockets</div>
+      <div id="selection-hint">Click to focus · Ctrl+click multi-select</div>
+    </div>
+    <div id="pocket-cards"></div>
+  </div>
+</div>
+
+<script>
+const POCKET_COLORS = ["#4caf50","#2196f3","#ff9800","#e91e63","#00bcd4","#cddc39","#9c27b0","#ff5722","#03a9f4","#8bc34a"];
+
+let viewer;
+let state = {
+  dataset: "", molecule: "",
+  pockets: null, alpha: null,
+  style: "cartoon",
+  selectedPockets: new Set(),
+  pdbStr: null,
+  alphaLineWidth: 1.5,
+  alphaOpacity: 0.40,
+  colors: {
+    background:   "#0f1117",
+    protein:      "#607d8b",
+    ligand:       "#ffffff",
+    pocketPoints: "#ff9800",
+    centroids:    "#4caf50",
+    mouth:        "#e040fb",
+    mesh:         "#03a9f4",
+    alphaIn:      "#1e88e5",
+    alphaOut:     "#fdd835",
+  },
+};
+
+$(function () {
+  viewer = $3Dmol.createViewer($("#viewer"), { backgroundColor: state.colors.background });
+  loadDatasets();
+  bindUI();
+  initColorChips();
+});
+
+const api = {
+  datasets:  ()          => fetch("/api/datasets").then(r => r.json()),
+  molecules: ds          => fetch(`/api/molecules/${ds}`).then(r => r.json()),
+  pockets:   (ds, mol)   => fetch(`/api/pockets/${ds}/${mol}`).then(r => r.json()),
+  alpha:     (ds, mol)   => fetch(`/api/alpha/${ds}/${mol}`).then(r => r.json()),
+  pdb:       mol         => fetch(`/api/pdb/${mol}`).then(r => r.text()),
+  pocketPdb: (ds, mol, r) => fetch(`/api/pocket_pdb/${ds}/${mol}/${r}`).then(r => {
+    if (!r.ok) throw new Error("not found"); return r.text();
+  }),
+  mesh: (ds, mol, r) => fetch(`/api/mesh/${ds}/${mol}/${r}`).then(r => {
+    if (!r.ok) throw new Error("not found"); return r.arrayBuffer();
+  }),
+};
+
+async function loadDatasets() {
+  try {
+    const ds = await api.datasets();
+    const sel = $("#sel-dataset").empty().append('<option value="">— select —</option>');
+    ds.forEach(d => sel.append(`<option value="${d}">${d}</option>`));
+  } catch(e) { console.error("loadDatasets:", e); }
+}
+
+async function loadMolecules(dataset) {
+  try {
+    const mols = await api.molecules(dataset);
+    const sel = $("#sel-molecule").empty().append('<option value="">— select molecule —</option>');
+    mols.forEach(m => sel.append(`<option value="${m}">${m}</option>`));
+    $("#stats").html(`<b>${dataset}</b> — ${mols.length} molecules`);
+  } catch(e) { console.error("loadMolecules:", e); }
+}
+
+async function loadMolecule(dataset, molecule) {
+  showLoading(true);
+  state.selectedPockets.clear();
+  try {
+    const [pockets, pdb] = await Promise.all([
+      api.pockets(dataset, molecule),
+      api.pdb(molecule).catch(() => null),
+    ]);
+    state.pockets = pockets;
+    state.pdbStr  = pdb;
+    state.dataset = dataset;
+    state.molecule = molecule;
+    state.alpha   = null;
+
+    api.alpha(dataset, molecule)
+      .then(a => {
+        state.alpha = a;
+        const need = $("#ly-alpha-in").prop("checked") || $("#ly-alpha-out").prop("checked");
+        if (need) { renderAlpha(); viewer.render(); }
+        updateAlphaInfo();
+      }).catch(() => { state.alpha = null; });
+
+    await renderScene();
+    renderPocketCards(pockets);
+  } catch(e) {
+    console.error("loadMolecule:", e);
+    alert("Error: " + e.message);
+  }
+  showLoading(false);
+}
+
+async function renderScene() {
+  viewer.clear();
+  const data = state.pockets;
+  if (!data) return;
+  const sel = state.selectedPockets;
+  const showAll = sel.size === 0;
+
+  if (state.pdbStr && state.pdbStr.length > 10 && $("#ly-protein").prop("checked")) {
+    try {
+      viewer.addModel(state.pdbStr, "pdb");
+      const op  = showAll ? 0.85 : 0.2;
+      const rep = state.style === "cartoon"
+        ? { cartoon: { color: state.colors.protein, opacity: op } }
+        : { stick:   { radius: 0.12, color: state.colors.protein, opacity: op } };
+      viewer.setStyle({}, rep);
+    } catch(e) { console.warn("PDB load:", e); }
+  }
+
+  if (data.ligand_coords && data.ligand_coords.length && $("#ly-ligand").prop("checked")) {
+    flatCoords(data.ligand_coords).forEach(p => {
+      viewer.addSphere({ center:{x:p[0],y:p[1],z:p[2]}, radius:0.55,
+        color: state.colors.ligand, opacity:0.95 });
+    });
+  }
+
+  if ($("#ly-pockets").prop("checked")) {
+    for (let i = 0; i < Math.min((data.ranked_pockets||[]).length, 6); i++) {
+      if (!showAll && !sel.has(i)) continue;
+      try {
+        const pdbStr = await api.pocketPdb(state.dataset, state.molecule, i+1);
+        viewer.addModel(pdbStr, "pdb");
+        viewer.setStyle({ model: viewer.getNumModels()-1 },
+          { sphere: { radius:0.45, color: POCKET_COLORS[i % POCKET_COLORS.length], opacity:0.7 } });
+      } catch(e) {}
+    }
+  }
+
+  if ($("#ly-centroids").prop("checked")) {
+    const pts   = flatCoords(data.representative_points || []);
+    const valid = data.ligand_validation || [];
+    const vols  = data.pocket_volumes    || [];
+    pts.forEach((p, i) => {
+      if (!showAll && !sel.has(i)) return;
+      const col = valid[i] ? state.colors.centroids : POCKET_COLORS[i % POCKET_COLORS.length];
+      viewer.addSphere({ center:{x:p[0],y:p[1],z:p[2]}, radius:1.3, color:col,
+        opacity: showAll ? 0.8 : 0.95 });
+      viewer.addLabel(`#${i+1}  ${vols[i]?.toFixed(0)??""}Å³`, {
+        position: {x:p[0], y:p[1]+2, z:p[2]},
+        fontSize: 11, fontColor:"white",
+        backgroundColor: "#000000", backgroundOpacity: 0.7, borderThickness: 0,
+      });
+    });
+  }
+
+  if ($("#ly-mouth").prop("checked")) {
+    const protAtoms = data.protein_atoms || [];
+    (data.ranked_pockets||[]).forEach((pocket, pi) => {
+      if (!showAll && !sel.has(pi)) return;
+      pocket.slice(0,30).map(idx => {
+        const a = protAtoms[idx];
+        return a ? a.coord : null;
+      }).filter(Boolean).forEach(p => {
+        viewer.addSphere({ center:{x:p[0],y:p[1],z:p[2]}, radius:0.3,
+          color: state.colors.mouth, opacity:0.6 });
+      });
+    });
+  }
+
+  renderAlpha();
+
+  if ($("#ly-mesh").prop("checked")) await renderMeshes(data, showAll, sel);
+
+  viewer.zoomTo();
+  try { viewer.render(); } catch(e) { console.error("render:", e); }
+}
+
+function renderAlpha() {
+  if (!state.alpha) return;
+  const { tetrahedra, alpha_mask } = state.alpha;
+  const showIn  = $("#ly-alpha-in").prop("checked");
+  const showOut = $("#ly-alpha-out").prop("checked");
+  if (!showIn && !showOut) return;
+  const MAX = 600;
+  let ci = 0, co = 0;
+  const edges = [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+  for (let i = 0; i < tetrahedra.length; i++) {
+    const inside = alpha_mask[i];
+    if ( inside && (!showIn  || ci >= MAX)) continue;
+    if (!inside && (!showOut || co >= MAX)) continue;
+    const tet = tetrahedra[i];
+    const col = inside ? state.colors.alphaIn : state.colors.alphaOut;
+    edges.forEach(([a,b]) => {
+      viewer.addLine({
+        start: {x:tet[a][0], y:tet[a][1], z:tet[a][2]},
+        end:   {x:tet[b][0], y:tet[b][1], z:tet[b][2]},
+        color: col, lineWidth: state.alphaLineWidth, opacity: state.alphaOpacity,
+      });
+    });
+    if (inside) ci++; else co++;
+  }
+  updateAlphaInfo();
+}
+
+async function renderMeshes(data, showAll, sel) {
+  const n = Math.min((data.ranked_pockets||[]).length, 6);
+  for (let i = 0; i < n; i++) {
+    if (!showAll && !sel.has(i)) continue;
+    try {
+      const buf   = await api.mesh(state.dataset, state.molecule, i+1);
+      const lines = parsePlyEdges(buf);
+      lines.forEach(([a,b]) => {
+        viewer.addLine({
+          start: {x:a[0],y:a[1],z:a[2]}, end: {x:b[0],y:b[1],z:b[2]},
+          color: state.colors.mesh, lineWidth:1.5, opacity:0.75,
+        });
+      });
+    } catch(e) {}
+  }
+}
+
+function parsePlyEdges(buffer) {
+  const text  = new TextDecoder().decode(buffer);
+  const lines = text.split("\n");
+  let headerEnd=0, nVerts=0, nFaces=0;
+  for (let i=0;i<lines.length;i++) {
+    const l=lines[i].trim();
+    if (l.startsWith("element vertex")) nVerts=parseInt(l.split(" ")[2]);
+    if (l.startsWith("element face"))   nFaces=parseInt(l.split(" ")[2]);
+    if (l==="end_header") { headerEnd=i+1; break; }
+  }
+  const verts=[];
+  for (let i=headerEnd;i<headerEnd+nVerts;i++) {
+    const p=lines[i].trim().split(/\s+/).map(Number);
+    verts.push([p[0],p[1],p[2]]);
+  }
+  const edges=[];
+  for (let i=headerEnd+nVerts;i<headerEnd+nVerts+nFaces;i++) {
+    const p=lines[i].trim().split(/\s+/).map(Number);
+    const n=p[0], f=p.slice(1,1+n);
+    for (let j=0;j<n;j++) edges.push([verts[f[j]], verts[f[(j+1)%n]]]);
+  }
+  return edges;
+}
+
+function renderPocketCards(data) {
+  const cards  = $("#pocket-cards").empty();
+  const vols   = data.pocket_volumes    || [];
+  const deps   = data.pocket_depths     || [];
+  const areas  = data.mouth_area        || [];
+  const valid  = data.ligand_validation || [];
+  const scores = data.ranking_scores    || [];
+  const step   = data.step_to_ligand;
+  const rp     = data.ranked_pockets    || [];
+
+  const indicesHit  = valid.map((v,i) => v ? i : -1).filter(i => i >= 0);
+  const indicesToShow = indicesHit.length > 0 ? indicesHit : rp.map((_,i) => i);
+
+  state.selectedPockets.clear();
+  indicesHit.forEach(i => state.selectedPockets.add(i));
+
+  indicesToShow.forEach(i => {
+    const col   = POCKET_COLORS[i % POCKET_COLORS.length];
+    const badge = valid[i] ? '<span class="badge hit">✓ ligand</span>' : "";
+    const card  = $(`
+      <div class="pocket-card" data-idx="${i}" style="border-left-color:${col}">
+        <div class="p-title" style="color:${col}">Pocket #${i+1} ${badge}</div>
+        <div class="p-row"><span>Volume</span><span>${vols[i]?.toFixed(1)??"—"} Å³</span></div>
+        <div class="p-row"><span>Depth</span><span>${deps[i]?.toFixed(1)??"—"} Å</span></div>
+        <div class="p-row"><span>Mouth area</span><span>${areas[i]?.toFixed(1)??"—"} Å²</span></div>
+        <div class="p-row"><span>Score</span><span>${scores[i]?.toFixed(1)??"—"}</span></div>
+        <div class="p-row"><span>Validated</span><span>${
+          valid[i]
+            ? "<span style='color:#4caf50'>Yes ✓</span>"
+            : "<span style='color:#f44336'>No</span>"
+        }</span></div>
+      </div>
+    `);
+    card.on("click", function(e) {
+      const idx = parseInt($(this).data("idx"));
+      if (e.ctrlKey || e.metaKey) {
+        if (state.selectedPockets.has(idx)) state.selectedPockets.delete(idx);
+        else state.selectedPockets.add(idx);
+      } else {
+        if (state.selectedPockets.size===1 && state.selectedPockets.has(idx))
+          state.selectedPockets.clear();
+        else { state.selectedPockets.clear(); state.selectedPockets.add(idx); }
+      }
+      updateCardStyles();
+      renderScene();
+    });
+    cards.append(card);
+  });
+
+  if (step) cards.append(
+    `<div style="font-size:0.78rem;color:#aaa;margin-top:8px">
+      Ligand at rank <b style="color:#7eb8f7">#${step}</b>
+    </div>`
+  );
+
+  $("#selection-hint").show();
+  updateCardStyles();
+}
+
+function updateCardStyles() {
+  const sel = state.selectedPockets;
+  $(".pocket-card").each(function() {
+    const i = parseInt($(this).data("idx"));
+    $(this)
+      .toggleClass("selected", sel.has(i))
+      .toggleClass("dimmed", sel.size > 0 && !sel.has(i));
+  });
+}
+
+function initColorChips() {
+  $(".color-chip").each(function () {
+    const key = $(this).data("key");
+    if (state.colors[key]) $(this).css("background-color", state.colors[key]);
+  });
+
+  $(".color-chip").on("click", function () {
+    const key   = $(this).data("key");
+    if (!state.colors[key]) return;
+    const $chip = $(this);
+
+    // Crea un input color fresco ogni volta e appendilo al body
+    const $picker = $('<input type="color">').css({
+      position: "fixed",
+      left: "-9999px",
+      top: "-9999px",
+      opacity: 0,
+      width: 0,
+      height: 0,
+    });
+    $picker.val(state.colors[key]);
+    $("body").append($picker);
+
+    $picker.on("input change", function () {
+      const val = $(this).val();
+      state.colors[key] = val;
+      $chip.css("background-color", val);
+      if (key === "background") {
+        viewer.setBackgroundColor(val);
+        try { viewer.render(); } catch(e) {}
+      } else {
+        if (state.pockets) renderScene();
+      }
+    });
+
+    // Rimuovi l'input quando perde il focus
+    $picker.on("blur", function () {
+      $(this).remove();
+    });
+
+    // Apri il picker
+    $picker[0].click();
+  });
+}
+
+
+function bindUI() {
+  $("#sel-dataset").on("change", function() {
+    const ds = $(this).val();
+    if (ds) loadMolecules(ds);
+  });
+  $("#sel-molecule").on("change", function() {
+    const mol = $(this).val();
+    const ds  = $("#sel-dataset").val();
+    if (mol && ds) loadMolecule(ds, mol);
+  });
+  $("input[type=checkbox]").on("change", function() {
+    if (state.pockets) renderScene();
+  });
+  $("#btn-reset").on("click", () => { viewer.zoomTo(); viewer.render(); });
+  $("#btn-style").on("click", () => {
+    state.style = state.style === "cartoon" ? "stick" : "cartoon";
+    if (state.pockets) renderScene();
+  });
+  $("#btn-clear-sel").on("click", () => {
+    state.selectedPockets.clear();
+    updateCardStyles();
+    renderScene();
+  });
+  $("#btn-export").on("click", () => {
+    if (!state.dataset || !state.molecule) { alert("Select a molecule first."); return; }
+    window.location = `/api/export/${state.dataset}/${state.molecule}`;
+  });
+  $("#slider-lw").on("input", function() {
+    state.alphaLineWidth = parseFloat($(this).val());
+    $("#lw-val").text($(this).val());
+    if (state.pockets) renderScene();
+  });
+  $("#slider-op").on("input", function() {
+    state.alphaOpacity = parseInt($(this).val()) / 100;
+    $("#op-val").text($(this).val());
+    if (state.pockets) renderScene();
+  });
+}
+
+function flatCoords(arr) {
+  if (!arr || !arr.length) return [];
+  if (Array.isArray(arr[0])) return arr;
+  const out = [];
+  for (let i=0; i<arr.length-2; i+=3) out.push([arr[i], arr[i+1], arr[i+2]]);
+  return out;
+}
+
+function updateAlphaInfo() {
+  if (!state.alpha) { $("#alpha-info").hide(); return; }
+  const nIn  = state.alpha.alpha_mask.filter(Boolean).length;
+  const nOut = state.alpha.alpha_mask.length - nIn;
+  $("#alpha-info").show().html(
+    `<b>Alpha shape</b><br>Inside: <b>${nIn}</b> · Outside: <b>${nOut}</b><br>
+     <span style="color:#666;font-size:0.7rem">Max 600 shown per layer</span>`
+  );
+}
+
+function showLoading(v) {
+  $("#loading").css("display", v ? "flex" : "none");
+}
+</script>
+</body>
+</html>
