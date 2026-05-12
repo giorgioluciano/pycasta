@@ -90,8 +90,6 @@ def export(dataset, molecule):
     return send_file(path, as_attachment=True,
                      download_name=f"{molecule}_pockets.json")
 
-if __name__ == "__main__":
-
 # ── Lab / Step-1 routes ──────────────────────────────────────────
 current_lab_dir = DATA_DIR
 
@@ -197,4 +195,5 @@ def lab_compute_alpha():
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-    app.run(debug=True, port=5000)
+if __name__ == "__main__":
+        app.run(debug=True, port=5000)
