@@ -546,3 +546,78 @@ function initColorChips(){
     if(!state.colors[key])return;
     const $chip=$(this);
     const $picker=$('<input type="color">').css({position:"fixed",left:"-9999px",top:"-9999px",opacity:0,width:0,height:0
+    const $chip=$(this);
+    const $picker=$('<input type="color">').css({position:"fixed",left:"-9999px",top:"-9999px",opacity:0,width:0,height:0});
+    $picker.val(state.colors[key]);
+    $("body").append($picker);
+    $picker.on("input change",function(){
+      const val=$(this).val();
+      state.colors[key]=val;
+      $chip.css("background-color",val);
+      if(key==="background"){
+        viewer.setBackgroundColor(val);
+        document.getElementById("viewer").style.background=val;
+        try{viewer.render();}catch(e){}
+      }else{
+        if(state.pockets)renderScene();
+      }
+    });
+    $picker.on("blur",function(){$(this).remove();});
+    $picker[0].click();
+  });
+}
+function bindUI(){
+  $("#sel-dataset").on("change",function(){
+    const ds=$(this).val();
+    if(ds)loadMolecules(ds);
+  });
+  $("#sel-molecule").on("change",function(){
+    const mol=$(this).val();
+    const ds=$("#sel-dataset").val();
+    if(mol&&ds)loadMolecule(ds,mol);
+  });
+  $("input[type=checkbox]").on("change",function(){
+    if(state.pockets)renderScene();
+  });
+  $("#btn-reset").on("click",()=>{viewer.zoomTo();viewer.render();});
+  $("#btn-style").on("click",()=>{
+    state.style=state.style==="cartoon"?"stick":"cartoon";
+    if(state.pockets)renderScene();
+  });
+  $("#btn-clear-sel").on("click",()=>{
+    state.selectedPockets.clear();
+    updateCardStyles();
+    renderScene();
+  });
+  $("#btn-export").on("click",()=>{
+    if(!state.dataset||!state.molecule){alert("Select a molecule first.");return;}
+    window.location=`/api/export/${state.dataset}/${state.molecule}`;
+  });
+  $("#slider-lw").on("input",function(){
+    state.alphaLineWidth=parseFloat($(this).val());
+    $("#lw-val").text($(this).val());
+    if(state.pockets)renderScene();
+  });
+  $("#slider-op").on("input",function(){
+    state.alphaOpacity=parseInt($(this).val())/100;
+    $("#op-val").text($(this).val());
+    if(state.pockets)renderScene();
+  });
+}
+function flatCoords(arr){
+  if(!arr||!arr.length)return[];
+  if(Array.isArray(arr[0]))return arr;
+  const out=[];
+  for(let i=0;i<arr.length-2;i+=3)out.push([arr[i],arr[i+1],arr[i+2]]);
+  return out;
+}
+function updateAlphaInfo(){
+  if(!state.alpha){$("#alpha-info").hide();return;}
+  const nIn=state.alpha.alpha_mask.filter(Boolean).length;
+  const nOut=state.alpha.alpha_mask.length-nIn;
+  $("#alpha-info").show().html(`<b>Alpha shape</b><br>Inside: <b>${nIn}</b> &middot; Outside: <b>${nOut}</b><br><span style="color:#607d8b;font-size:0.7rem">Max 600 shown per layer</span>`);
+}
+function showLoading(v){$("#loading").css("display",v?"flex":"none");}
+</script>
+</body>
+</html>
