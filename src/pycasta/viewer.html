@@ -301,3 +301,248 @@ input[type=range]{accent-color:#4fc3f7;width:100%;margin-top:3px;}
   <div id="pocket-cards"></div>
 </div>
 </div>
+<script>
+const POCKET_COLORS=["#4caf50","#2196f3","#ff9800","#e91e63","#00bcd4","#cddc39","#9c27b0","#ff5722","#03a9f4","#8bc34a"];
+let viewer;
+let state={
+  dataset:"",molecule:"",pockets:null,alpha:null,style:"cartoon",
+  selectedPockets:new Set(),pdbStr:null,alphaLineWidth:1.5,alphaOpacity:0.40,
+  colors:{
+    background:"#000000",protein:"#607d8b",ligand:"#ffffff",
+    pocketPoints:"#ff9800",centroids:"#4caf50",mouth:"#e040fb",
+    mesh:"#00e5ff",alphaIn:"#4fc3f7",alphaOut:"#fdd835",
+  },
+};
+$(function(){
+  viewer=$3Dmol.createViewer($("#viewer"),{backgroundColor:state.colors.background,antialias:false});
+  loadDatasets();
+  bindUI();
+  initColorChips();
+});
+const api={
+  datasets:()=>fetch("/api/datasets").then(r=>r.json()),
+  molecules:ds=>fetch(`/api/molecules/${ds}`).then(r=>r.json()),
+  pockets:(ds,mol)=>fetch(`/api/pockets/${ds}/${mol}`).then(r=>r.json()),
+  alpha:(ds,mol)=>fetch(`/api/alpha/${ds}/${mol}`).then(r=>r.json()),
+  pdb:mol=>fetch(`/api/pdb/${mol}`).then(r=>r.text()),
+  pocketPdb:(ds,mol,r)=>fetch(`/api/pocket_pdb/${ds}/${mol}/${r}`).then(r=>{if(!r.ok)throw new Error("not found");return r.text();}),
+  mesh:(ds,mol,r)=>fetch(`/api/mesh/${ds}/${mol}/${r}`).then(r=>{if(!r.ok)throw new Error("not found");return r.arrayBuffer();}),
+};
+async function loadDatasets(){
+  try{
+    const ds=await api.datasets();
+    const sel=$("#sel-dataset").empty().append('<option value="">— select —</option>');
+    ds.forEach(d=>sel.append(`<option value="${d}">${d}</option>`));
+  }catch(e){console.error("loadDatasets:",e);}
+}
+async function loadMolecules(dataset){
+  try{
+    const mols=await api.molecules(dataset);
+    const sel=$("#sel-molecule").empty().append('<option value="">— select molecule —</option>');
+    mols.forEach(m=>sel.append(`<option value="${m}">${m}</option>`));
+    $("#stats").html(`<b>${dataset}</b> — ${mols.length} molecules`);
+  }catch(e){console.error("loadMolecules:",e);}
+}
+async function loadMolecule(dataset,molecule){
+  showLoading(true);
+  state.selectedPockets.clear();
+  try{
+    const[pockets,pdb]=await Promise.all([
+      api.pockets(dataset,molecule),
+      api.pdb(molecule).catch(()=>null),
+    ]);
+    state.pockets=pockets;state.pdbStr=pdb;
+    state.dataset=dataset;state.molecule=molecule;state.alpha=null;
+    api.alpha(dataset,molecule)
+      .then(a=>{
+        state.alpha=a;
+        const need=$("#ly-alpha-in").prop("checked")||$("#ly-alpha-out").prop("checked");
+        if(need){renderAlpha();viewer.render();}
+        updateAlphaInfo();
+      }).catch(()=>{state.alpha=null;});
+    await renderScene();
+    renderPocketCards(pockets);
+  }catch(e){console.error("loadMolecule:",e);alert("Error: "+e.message);}
+  showLoading(false);
+}
+async function renderScene(){
+  viewer.clear();
+  const data=state.pockets;
+  if(!data)return;
+  const sel=state.selectedPockets;
+  const showAll=sel.size===0;
+  if(state.pdbStr&&state.pdbStr.length>10&&$("#ly-protein").prop("checked")){
+    try{
+      viewer.addModel(state.pdbStr,"pdb");
+      const op=showAll?0.85:0.2;
+      const rep=state.style==="cartoon"
+        ?{cartoon:{color:state.colors.protein,opacity:op}}
+        :{stick:{radius:0.12,color:state.colors.protein,opacity:op}};
+      viewer.setStyle({},rep);
+    }catch(e){console.warn("PDB load:",e);}
+  }
+  if(data.ligand_coords&&data.ligand_coords.length&&$("#ly-ligand").prop("checked")){
+    flatCoords(data.ligand_coords).forEach(p=>{
+      viewer.addSphere({center:{x:p[0],y:p[1],z:p[2]},radius:0.55,color:state.colors.ligand,opacity:0.95});
+    });
+  }
+  if($("#ly-pockets").prop("checked")){
+    for(let i=0;i<Math.min((data.ranked_pockets||[]).length,6);i++){
+      if(!showAll&&!sel.has(i))continue;
+      try{
+        const pdbStr=await api.pocketPdb(state.dataset,state.molecule,i+1);
+        viewer.addModel(pdbStr,"pdb");
+        viewer.setStyle({model:viewer.getNumModels()-1},{sphere:{radius:0.45,color:POCKET_COLORS[i%POCKET_COLORS.length],opacity:0.7}});
+      }catch(e){}
+    }
+  }
+  if($("#ly-centroids").prop("checked")){
+    const pts=flatCoords(data.representative_points||[]);
+    const valid=data.ligand_validation||[];
+    const vols=data.pocket_volumes||[];
+    pts.forEach((p,i)=>{
+      if(!showAll&&!sel.has(i))return;
+      const col=valid[i]?state.colors.centroids:POCKET_COLORS[i%POCKET_COLORS.length];
+      viewer.addSphere({center:{x:p[0],y:p[1],z:p[2]},radius:1.3,color:col,opacity:showAll?0.8:0.95});
+      viewer.addLabel(`#${i+1} ${vols[i]?.toFixed(0)??""}Å³`,{
+        position:{x:p[0],y:p[1]+2,z:p[2]},fontSize:11,fontColor:"white",
+        backgroundColor:"#000000",backgroundOpacity:0.7,borderThickness:0,
+      });
+    });
+  }
+  if($("#ly-mouth").prop("checked")){
+    const protAtoms=data.protein_atoms||[];
+    (data.ranked_pockets||[]).forEach((pocket,pi)=>{
+      if(!showAll&&!sel.has(pi))return;
+      pocket.slice(0,30).map(idx=>{const a=protAtoms[idx];return a?a.coord:null;})
+        .filter(Boolean).forEach(p=>{
+          viewer.addSphere({center:{x:p[0],y:p[1],z:p[2]},radius:0.3,color:state.colors.mouth,opacity:0.6});
+        });
+    });
+  }
+  renderAlpha();
+  if($("#ly-mesh").prop("checked"))await renderMeshes(data,showAll,sel);
+  viewer.zoomTo();
+  try{viewer.render();}catch(e){console.error("render:",e);}
+}
+function renderAlpha(){
+  if(!state.alpha)return;
+  const{tetrahedra,alpha_mask}=state.alpha;
+  const showIn=$("#ly-alpha-in").prop("checked");
+  const showOut=$("#ly-alpha-out").prop("checked");
+  if(!showIn&&!showOut)return;
+  const MAX=600;let ci=0,co=0;
+  const edges=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+  for(let i=0;i<tetrahedra.length;i++){
+    const inside=alpha_mask[i];
+    if(inside&&(!showIn||ci>=MAX))continue;
+    if(!inside&&(!showOut||co>=MAX))continue;
+    const tet=tetrahedra[i];
+    const col=inside?state.colors.alphaIn:state.colors.alphaOut;
+    edges.forEach(([a,b])=>{
+      viewer.addLine({
+        start:{x:tet[a][0],y:tet[a][1],z:tet[a][2]},
+        end:{x:tet[b][0],y:tet[b][1],z:tet[b][2]},
+        color:col,lineWidth:state.alphaLineWidth,opacity:state.alphaOpacity,
+      });
+    });
+    if(inside)ci++;else co++;
+  }
+  updateAlphaInfo();
+}
+async function renderMeshes(data,showAll,sel){
+  const n=Math.min((data.ranked_pockets||[]).length,6);
+  for(let i=0;i<n;i++){
+    if(!showAll&&!sel.has(i))continue;
+    try{
+      const buf=await api.mesh(state.dataset,state.molecule,i+1);
+      const lines=parsePlyEdges(buf);
+      lines.forEach(([a,b])=>{
+        viewer.addLine({start:{x:a[0],y:a[1],z:a[2]},end:{x:b[0],y:b[1],z:b[2]},
+          color:state.colors.mesh,lineWidth:1.5,opacity:0.75});
+      });
+    }catch(e){}
+  }
+}
+function parsePlyEdges(buffer){
+  const text=new TextDecoder().decode(buffer);
+  const lines=text.split("\n");
+  let headerEnd=0,nVerts=0,nFaces=0;
+  for(let i=0;ies.length;i++){
+    const l=lines[i].trim();
+    if(l.startsWith("element vertex"))nVerts=parseInt(l.split(" ")[2]);
+    if(l.startsWith("element face"))nFaces=parseInt(l.split(" ")[2]);
+    if(l==="end_header"){headerEnd=i+1;break;}
+  }
+  const verts=[];
+  for(let i=headerEnd;i<headerEnd+nVerts;i++){
+    const p=lines[i].trim().split(/\s+/).map(Number);
+    verts.push([p[0],p[1],p[2]]);
+  }
+  const edges=[];
+  for(let i=headerEnd+nVerts;i<headerEnd+nVerts+nFaces;i++){
+    const p=lines[i].trim().split(/\s+/).map(Number);
+    const n=p[0],f=p.slice(1,1+n);
+    for(let j=0;j<n;j++)edges.push([verts[f[j]],verts[f[(j+1)%n]]]);
+  }
+  return edges;
+}
+function renderPocketCards(data){
+  const cards=$("#pocket-cards").empty();
+  const vols=data.pocket_volumes||[];
+  const deps=data.pocket_depths||[];
+  const areas=data.mouth_area||[];
+  const valid=data.ligand_validation||[];
+  const scores=data.ranking_scores||[];
+  const step=data.step_to_ligand;
+  const rp=data.ranked_pockets||[];
+  const indicesHit=valid.map((v,i)=>v?i:-1).filter(i=>i>=0);
+  const indicesToShow=indicesHit.length>0?indicesHit:rp.map((_,i)=>i);
+  state.selectedPockets.clear();
+  indicesHit.forEach(i=>state.selectedPockets.add(i));
+  indicesToShow.forEach(i=>{
+    const col=POCKET_COLORS[i%POCKET_COLORS.length];
+    const badge=valid[i]?'<span class="badge hit">✓ ligand</span>':"";
+    const card=$(`
+      <div class="pocket-card" data-idx="${i}" style="border-left-color:${col}">
+        <div class="p-title" style="color:${col}">Pocket #${i+1} ${badge}</div>
+        <div class="p-row"><span>Volume</span><span>${vols[i]?.toFixed(1)??"—"} Å³</span></div>
+        <div class="p-row"><span>Depth</span><span>${deps[i]?.toFixed(1)??"—"} Å</span></div>
+        <div class="p-row"><span>Mouth area</span><span>${areas[i]?.toFixed(1)??"—"} Å²</span></div>
+        <div class="p-row"><span>Score</span><span>${scores[i]?.toFixed(1)??"—"}</span></div>
+        <div class="p-row"><span>Validated</span><span>${valid[i]?"<span style='color:#4caf50'>Yes ✓</span>":"<span style='color:#f44336'>No</span>"}</span></div>
+      </div>`);
+    card.on("click",function(e){
+      const idx=parseInt($(this).data("idx"));
+      if(e.ctrlKey||e.metaKey){
+        if(state.selectedPockets.has(idx))state.selectedPockets.delete(idx);
+        else state.selectedPockets.add(idx);
+      }else{
+        if(state.selectedPockets.size===1&&state.selectedPockets.has(idx))state.selectedPockets.clear();
+        else{state.selectedPockets.clear();state.selectedPockets.add(idx);}
+      }
+      updateCardStyles();renderScene();
+    });
+    cards.append(card);
+  });
+  if(step)cards.append(`<div style="font-size:0.78rem;color:#b0bec5;margin-top:8px">Ligand at rank <b style="color:#4fc3f7">#${step}</b></div>`);
+  $("#selection-hint").show();
+  updateCardStyles();
+}
+function updateCardStyles(){
+  const sel=state.selectedPockets;
+  $(".pocket-card").each(function(){
+    const i=parseInt($(this).data("idx"));
+    $(this).toggleClass("selected",sel.has(i)).toggleClass("dimmed",sel.size>0&&!sel.has(i));
+  });
+}
+function initColorChips(){
+  $(".color-chip").each(function(){
+    const key=$(this).data("key");
+    if(state.colors[key])$(this).css("background-color",state.colors[key]);
+  });
+  $(".color-chip").on("click",function(){
+    const key=$(this).data("key");
+    if(!state.colors[key])return;
+    const $chip=$(this);
+    const $picker=$('<input type="color">').css({position:"fixed",left:"-9999px",top:"-9999px",opacity:0,width:0,height:0
