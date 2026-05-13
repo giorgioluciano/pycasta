@@ -7,229 +7,87 @@
 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <style>
 *{box-sizing:border-box;}
-body{
-  margin:0;padding:0;
-  background:#1a1a2e;
-  color:#e0e0e0;
-  font-family:sans-serif;
-  font-size:13px;
-}
-#app{
-  display:grid;
-  grid-template-columns:280px 1fr 280px;
-  grid-template-rows:auto 1fr;
-  height:100vh;
-  gap:6px;
-  padding:8px;
-}
-header{
-  grid-column:1/4;
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
-  margin-bottom:4px;
-  border-bottom:1px solid #0f3460;
-  padding-bottom:6px;
-}
-header h1{
-  font-size:15px;
-  margin:0;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  color:#4fc3f7;
-}
-header .subtitle{
-  font-size:11px;
-  color:#b0bec5;
-  margin-left:10px;
-}
-header .stats{
-  font-size:11px;
-  color:#4fc3f7;
-}
-.panel{
-  background:#16213e;
-  border-radius:6px;
-  padding:10px;
-  border:1px solid #0f3460;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-#viewer{
-  width:100%;height:100%;
-  border-radius:6px;
-  overflow:hidden;
-  background:#000;
-  position:relative;
-}
-.section-title{
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:0.08em;
-  color:#4fc3f7;
-  margin-bottom:6px;
-  margin-top:4px;
-}
+body{margin:0;padding:0;background:#1a1a2e;color:#e0e0e0;font-family:sans-serif;font-size:13px;}
+#app{display:grid;grid-template-columns:280px 1fr 280px;grid-template-rows:auto 1fr;height:100vh;gap:6px;padding:8px;}
+header{grid-column:1/4;display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;border-bottom:1px solid #0f3460;padding-bottom:6px;}
+header h1{font-size:15px;margin:0;letter-spacing:0.08em;text-transform:uppercase;color:#4fc3f7;}
+header .subtitle{font-size:11px;color:#b0bec5;margin-left:10px;}
+header .stats{font-size:11px;color:#4fc3f7;}
+.panel{background:#16213e;border-radius:6px;padding:10px;border:1px solid #0f3460;display:flex;flex-direction:column;overflow:hidden;}
+#viewer{width:100%;height:100%;border-radius:6px;overflow:hidden;background:#000;position:relative;}
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#4fc3f7;margin-bottom:6px;margin-top:4px;}
 .field{margin-bottom:8px;}
-label{
-  display:block;
-  font-size:11px;
-  color:#b0bec5;
-  margin-bottom:3px;
-}
-select,button{
-  width:100%;
-  box-sizing:border-box;
-  padding:5px 8px;
-  border-radius:3px;
-  border:1px solid #0f3460;
-  background:#0f3460;
-  color:#e0e0e0;
-  font-size:12px;
-}
-select:focus,button:focus{
-  outline:1px solid #4fc3f7;
-  outline-offset:1px;
-}
-button{
-  cursor:pointer;
-  background:#0f3460;
-  border-color:#1a4a8a;
-  color:#4fc3f7;
-  font-weight:500;
-  margin-bottom:2px;
-}
+label{display:block;font-size:11px;color:#b0bec5;margin-bottom:3px;}
+select,button{width:100%;box-sizing:border-box;padding:5px 8px;border-radius:3px;border:1px solid #0f3460;background:#0f3460;color:#e0e0e0;font-size:12px;}
+select:focus,button:focus{outline:1px solid #4fc3f7;outline-offset:1px;}
+button{cursor:pointer;background:#0f3460;border-color:#1a4a8a;color:#4fc3f7;font-weight:500;margin-bottom:2px;}
 button:hover{background:#1a4a8a;}
-button.secondary{
-  background:#16213e;
-  border-color:#0f3460;
-  color:#b0bec5;
-}
+button.secondary{background:#16213e;border-color:#0f3460;color:#b0bec5;}
 button.secondary:hover{background:#0f3460;}
-button.small{
-  font-size:11px;
-  padding:3px 6px;
-  width:auto;
-}
-.toolbar{
-  display:flex;
-  gap:4px;
-  flex-wrap:wrap;
-  margin-top:4px;
-  margin-bottom:4px;
-}
-.checkbox-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:4px 10px;
-  font-size:11px;
-  margin-bottom:4px;
-}
-.checkbox-row label{
-  display:flex;
-  align-items:center;
-  gap:4px;
-  font-size:11px;
-  margin:0;
-  cursor:pointer;
-}
+button.small{font-size:11px;padding:3px 6px;width:auto;}
+.toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;margin-bottom:4px;}
+.checkbox-row{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;margin-bottom:4px;}
+.checkbox-row label{display:flex;align-items:center;gap:4px;font-size:11px;margin:0;cursor:pointer;}
 .checkbox-row input{margin:0;accent-color:#4fc3f7;}
 .section{margin-bottom:8px;}
-#pocket-cards{
-  flex:1;
-  overflow-y:auto;
-  padding-right:4px;
-}
+#pocket-cards{flex:1;overflow-y:auto;padding-right:4px;}
 #pocket-cards::-webkit-scrollbar{width:4px;}
 #pocket-cards::-webkit-scrollbar-track{background:#0f3460;}
 #pocket-cards::-webkit-scrollbar-thumb{background:#1a4a8a;border-radius:2px;}
-.pocket-card{
-  background:#0f1a35;
-  border-radius:5px;
-  padding:8px;
-  margin-bottom:6px;
-  border-left:3px solid #607d8b;
-  border:1px solid #0f3460;
-  border-left-width:3px;
-  cursor:pointer;
-  transition:background 0.15s,transform 0.1s;
-}
+.pocket-card{background:#0f1a35;border-radius:5px;padding:8px;margin-bottom:6px;border-left:3px solid #607d8b;border:1px solid #0f3460;border-left-width:3px;cursor:pointer;transition:background 0.15s,transform 0.1s;}
 .pocket-card:hover{background:#16213e;transform:translateY(-1px);}
 .pocket-card.selected{background:#0d2244;border-color:#4fc3f7;}
 .pocket-card.dimmed{opacity:0.35;}
 .p-title{font-size:12px;font-weight:600;margin-bottom:4px;}
-.p-row{
-  display:flex;
-  justify-content:space-between;
-  font-size:11px;
-  color:#b0bec5;
-  margin:2px 0;
-}
+.p-row{display:flex;justify-content:space-between;font-size:11px;color:#b0bec5;margin:2px 0;}
 .p-row span:last-child{color:#e0e0e0;}
-.badge{
-  font-size:10px;
-  padding:1px 5px;
-  border-radius:999px;
-  margin-left:4px;
-  background:#1b3a28;
-  color:#69f0ae;
-  border:1px solid #4caf50;
-}
+.badge{font-size:10px;padding:1px 5px;border-radius:999px;margin-left:4px;background:#1b3a28;color:#69f0ae;border:1px solid #4caf50;}
 .badge.hit{background:#0d2e1e;color:#b9f6ca;}
-#loading{
-  position:absolute;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:rgba(10,15,30,0.7);
-  backdrop-filter:blur(2px);
-  z-index:10;
-  color:#4fc3f7;
-  font-size:13px;
-}
-#alpha-info{
-  font-size:11px;
-  color:#b0bec5;
-  padding:6px 8px;
-  border-radius:4px;
-  background:#0f1a35;
-  border:1px solid #0f3460;
-  margin-top:6px;
-  display:none;
-}
-#selection-hint{
-  font-size:10px;
-  color:#b0bec5;
-  margin-top:4px;
-  display:none;
-}
-.chip-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
-.color-chip{
-  display:inline-block;
-  width:18px;height:18px;
-  border-radius:3px;
-  border:1px solid #0f3460;
-  cursor:pointer;
-  flex-shrink:0;
-}
+#loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,15,30,0.7);backdrop-filter:blur(2px);z-index:10;color:#4fc3f7;font-size:13px;}
+#alpha-info{font-size:11px;color:#b0bec5;padding:6px 8px;border-radius:4px;background:#0f1a35;border:1px solid #0f3460;margin-top:6px;display:none;}
+#selection-hint{font-size:10px;color:#b0bec5;margin-top:4px;display:none;}
 input[type=range]{accent-color:#4fc3f7;width:100%;margin-top:3px;}
+input[type=text]{width:100%;box-sizing:border-box;padding:4px 7px;border-radius:3px;border:1px solid #0f3460;background:#0f3460;color:#e0e0e0;font-size:12px;}
+/* chip shape */
+.chip-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:4px;}
+.color-chip{display:inline-block;width:18px;height:18px;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:border-color 0.15s,transform 0.1s;}
+.color-chip:hover{transform:scale(1.2);}
+.color-chip.active{border-color:#fff !important;}
+body.chips-circle .color-chip{border-radius:50%;}
+body.chips-square .color-chip{border-radius:3px;}
+/* preset swatches */
+.preset-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
+.preset-btn{font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid #0f3460;background:#0f1a35;color:#b0bec5;cursor:pointer;white-space:nowrap;}
+.preset-btn:hover{background:#0f3460;color:#4fc3f7;}
+/* full picker grid */
+#full-picker-wrap{margin-top:6px;}
+#full-picker-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
+.fp-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#b0bec5;}
+.fp-swatch{width:16px;height:16px;border-radius:3px;border:1px solid #0f3460;cursor:pointer;flex-shrink:0;}
 </style>
 </head>
-<body>
+<body class="chips-circle">
 <div id="app">
 <header>
-  <div style="display:flex;align-items:baseline;gap:0">
+  <div style="display:flex;align-items:baseline;">
     <h1>PyCASTA</h1>
     <span class="subtitle">Pocket Viewer</span>
   </div>
   <span class="stats" id="stats">Select a dataset</span>
 </header>
 
+<!-- LEFT PANEL -->
 <div class="panel">
+
   <div class="section">
-    <div class="section-title">Dataset &amp; molecule</div>
+    <div class="section-title">Data Source</div>
+    <div class="field">
+      <label>PDB Directory</label>
+      <div style="display:flex;gap:4px;">
+        <input type="text" id="inp-pdb-dir" placeholder="C:\path\to\pdbs" style="flex:1">
+        <button class="small" onclick="setPdbDir()" style="width:auto;white-space:nowrap">Set</button>
+      </div>
+    </div>
     <div class="field">
       <label>Dataset</label>
       <select id="sel-dataset"><option value="">— select —</option></select>
@@ -239,28 +97,15 @@ input[type=range]{accent-color:#4fc3f7;width:100%;margin-top:3px;}
       <select id="sel-molecule"><option value="">— select molecule —</option></select>
     </div>
   </div>
+
   <div class="toolbar">
     <button class="secondary small" id="btn-reset">Reset view</button>
     <button class="secondary small" id="btn-style">Toggle style</button>
     <button class="secondary small" id="btn-clear-sel">Clear sel.</button>
     <button class="secondary small" id="btn-export">Export JSON</button>
   </div>
+
   <div class="section">
-    <div class="section-title">Appearance</div>
-    <div class="field">
-      <label>Background</label>
-      <div class="chip-row">
-        <span class="color-chip" data-key="background" title="background"></span>
-        <span class="color-chip" data-key="protein" title="protein"></span>
-        <span class="color-chip" data-key="ligand" title="ligand"></span>
-        <span class="color-chip" data-key="pocketPoints" title="pocket pts"></span>
-        <span class="color-chip" data-key="centroids" title="centroids"></span>
-        <span class="color-chip" data-key="mouth" title="mouth"></span>
-        <span class="color-chip" data-key="mesh" title="mesh"></span>
-        <span class="color-chip" data-key="alphaIn" title="alpha in"></span>
-        <span class="color-chip" data-key="alphaOut" title="alpha out"></span>
-      </div>
-    </div>
     <div class="section-title">Layers</div>
     <div class="checkbox-row">
       <label><input type="checkbox" id="ly-protein" checked> Protein</label>
@@ -278,7 +123,7 @@ input[type=range]{accent-color:#4fc3f7;width:100%;margin-top:3px;}
       <label><input type="checkbox" id="ly-alpha-in" checked> α inside</label>
       <label><input type="checkbox" id="ly-alpha-out"> α outside</label>
     </div>
-    <div class="field" style="margin-top:6px">
+    <div class="field" style="margin-top:4px">
       <label>α line width &nbsp;<b id="lw-val">1.5</b> px</label>
       <input type="range" id="slider-lw" min="0.5" max="4" step="0.25" value="1.5">
     </div>
@@ -287,337 +132,53 @@ input[type=range]{accent-color:#4fc3f7;width:100%;margin-top:3px;}
       <input type="range" id="slider-op" min="5" max="90" step="5" value="40">
     </div>
   </div>
+
+  <div class="section">
+    <div class="section-title">Appearance</div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:11px;color:#b0bec5">Chip shape:</span>
+      <div style="display:flex;gap:4px;">
+        <button class="small secondary" id="btn-circle" onclick="setChipShape('circle')">&#9679; Circle</button>
+        <button class="small secondary" id="btn-square" onclick="setChipShape('square')">&#9632; Square</button>
+      </div>
+    </div>
+
+    <label>Presets</label>
+    <div class="preset-row">
+      <span class="preset-btn" onclick="applyPreset('dark')">Dark</span>
+      <span class="preset-btn" onclick="applyPreset('light')">Light</span>
+      <span class="preset-btn" onclick="applyPreset('neon')">Neon</span>
+      <span class="preset-btn" onclick="applyPreset('pastel')">Pastel</span>
+      <span class="preset-btn" onclick="applyPreset('mono')">Mono</span>
+    </div>
+
+    <label>Quick colors</label>
+    <div class="chip-row" id="quick-chips"></div>
+
+    <div id="full-picker-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:11px;color:#b0bec5">All colors</span>
+        <button class="small secondary" onclick="toggleFullPicker()">Expand</button>
+      </div>
+      <div id="full-picker-grid" style="display:none;"></div>
+    </div>
+  </div>
+
   <div id="alpha-info"></div>
 </div>
 
+<!-- CENTER -->
 <div class="panel" style="position:relative;">
   <div id="viewer"></div>
   <div id="loading">Loading molecule…</div>
 </div>
 
+<!-- RIGHT PANEL -->
 <div class="panel">
   <div class="section-title">Pockets</div>
   <div style="font-size:10px;color:#b0bec5;margin-bottom:6px" id="selection-hint">Click to focus &middot; Ctrl+click multi-select</div>
   <div id="pocket-cards"></div>
 </div>
+
 </div>
-<script>
-const POCKET_COLORS=["#4caf50","#2196f3","#ff9800","#e91e63","#00bcd4","#cddc39","#9c27b0","#ff5722","#03a9f4","#8bc34a"];
-let viewer;
-let state={
-  dataset:"",molecule:"",pockets:null,alpha:null,style:"cartoon",
-  selectedPockets:new Set(),pdbStr:null,alphaLineWidth:1.5,alphaOpacity:0.40,
-  colors:{
-    background:"#000000",protein:"#607d8b",ligand:"#ffffff",
-    pocketPoints:"#ff9800",centroids:"#4caf50",mouth:"#e040fb",
-    mesh:"#00e5ff",alphaIn:"#4fc3f7",alphaOut:"#fdd835",
-  },
-};
-$(function(){
-  viewer=$3Dmol.createViewer($("#viewer"),{backgroundColor:state.colors.background,antialias:false});
-  loadDatasets();
-  bindUI();
-  initColorChips();
-});
-const api={
-  datasets:()=>fetch("/api/datasets").then(r=>r.json()),
-  molecules:ds=>fetch(`/api/molecules/${ds}`).then(r=>r.json()),
-  pockets:(ds,mol)=>fetch(`/api/pockets/${ds}/${mol}`).then(r=>r.json()),
-  alpha:(ds,mol)=>fetch(`/api/alpha/${ds}/${mol}`).then(r=>r.json()),
-  pdb:mol=>fetch(`/api/pdb/${mol}`).then(r=>r.text()),
-  pocketPdb:(ds,mol,r)=>fetch(`/api/pocket_pdb/${ds}/${mol}/${r}`).then(r=>{if(!r.ok)throw new Error("not found");return r.text();}),
-  mesh:(ds,mol,r)=>fetch(`/api/mesh/${ds}/${mol}/${r}`).then(r=>{if(!r.ok)throw new Error("not found");return r.arrayBuffer();}),
-};
-async function loadDatasets(){
-  try{
-    const ds=await api.datasets();
-    const sel=$("#sel-dataset").empty().append('<option value="">— select —</option>');
-    ds.forEach(d=>sel.append(`<option value="${d}">${d}</option>`));
-  }catch(e){console.error("loadDatasets:",e);}
-}
-async function loadMolecules(dataset){
-  try{
-    const mols=await api.molecules(dataset);
-    const sel=$("#sel-molecule").empty().append('<option value="">— select molecule —</option>');
-    mols.forEach(m=>sel.append(`<option value="${m}">${m}</option>`));
-    $("#stats").html(`<b>${dataset}</b> — ${mols.length} molecules`);
-  }catch(e){console.error("loadMolecules:",e);}
-}
-async function loadMolecule(dataset,molecule){
-  showLoading(true);
-  state.selectedPockets.clear();
-  try{
-    const[pockets,pdb]=await Promise.all([
-      api.pockets(dataset,molecule),
-      api.pdb(molecule).catch(()=>null),
-    ]);
-    state.pockets=pockets;state.pdbStr=pdb;
-    state.dataset=dataset;state.molecule=molecule;state.alpha=null;
-    api.alpha(dataset,molecule)
-      .then(a=>{
-        state.alpha=a;
-        const need=$("#ly-alpha-in").prop("checked")||$("#ly-alpha-out").prop("checked");
-        if(need){renderAlpha();viewer.render();}
-        updateAlphaInfo();
-      }).catch(()=>{state.alpha=null;});
-    await renderScene();
-    renderPocketCards(pockets);
-  }catch(e){console.error("loadMolecule:",e);alert("Error: "+e.message);}
-  showLoading(false);
-}
-async function renderScene(){
-  viewer.clear();
-  const data=state.pockets;
-  if(!data)return;
-  const sel=state.selectedPockets;
-  const showAll=sel.size===0;
-  if(state.pdbStr&&state.pdbStr.length>10&&$("#ly-protein").prop("checked")){
-    try{
-      viewer.addModel(state.pdbStr,"pdb");
-      const op=showAll?0.85:0.2;
-      const rep=state.style==="cartoon"
-        ?{cartoon:{color:state.colors.protein,opacity:op}}
-        :{stick:{radius:0.12,color:state.colors.protein,opacity:op}};
-      viewer.setStyle({},rep);
-    }catch(e){console.warn("PDB load:",e);}
-  }
-  if(data.ligand_coords&&data.ligand_coords.length&&$("#ly-ligand").prop("checked")){
-    flatCoords(data.ligand_coords).forEach(p=>{
-      viewer.addSphere({center:{x:p[0],y:p[1],z:p[2]},radius:0.55,color:state.colors.ligand,opacity:0.95});
-    });
-  }
-  if($("#ly-pockets").prop("checked")){
-    for(let i=0;i<Math.min((data.ranked_pockets||[]).length,6);i++){
-      if(!showAll&&!sel.has(i))continue;
-      try{
-        const pdbStr=await api.pocketPdb(state.dataset,state.molecule,i+1);
-        viewer.addModel(pdbStr,"pdb");
-        viewer.setStyle({model:viewer.getNumModels()-1},{sphere:{radius:0.45,color:POCKET_COLORS[i%POCKET_COLORS.length],opacity:0.7}});
-      }catch(e){}
-    }
-  }
-  if($("#ly-centroids").prop("checked")){
-    const pts=flatCoords(data.representative_points||[]);
-    const valid=data.ligand_validation||[];
-    const vols=data.pocket_volumes||[];
-    pts.forEach((p,i)=>{
-      if(!showAll&&!sel.has(i))return;
-      const col=valid[i]?state.colors.centroids:POCKET_COLORS[i%POCKET_COLORS.length];
-      viewer.addSphere({center:{x:p[0],y:p[1],z:p[2]},radius:1.3,color:col,opacity:showAll?0.8:0.95});
-      viewer.addLabel(`#${i+1} ${vols[i]?.toFixed(0)??""}Å³`,{
-        position:{x:p[0],y:p[1]+2,z:p[2]},fontSize:11,fontColor:"white",
-        backgroundColor:"#000000",backgroundOpacity:0.7,borderThickness:0,
-      });
-    });
-  }
-  if($("#ly-mouth").prop("checked")){
-    const protAtoms=data.protein_atoms||[];
-    (data.ranked_pockets||[]).forEach((pocket,pi)=>{
-      if(!showAll&&!sel.has(pi))return;
-      pocket.slice(0,30).map(idx=>{const a=protAtoms[idx];return a?a.coord:null;})
-        .filter(Boolean).forEach(p=>{
-          viewer.addSphere({center:{x:p[0],y:p[1],z:p[2]},radius:0.3,color:state.colors.mouth,opacity:0.6});
-        });
-    });
-  }
-  renderAlpha();
-  if($("#ly-mesh").prop("checked"))await renderMeshes(data,showAll,sel);
-  viewer.zoomTo();
-  try{viewer.render();}catch(e){console.error("render:",e);}
-}
-function renderAlpha(){
-  if(!state.alpha)return;
-  const{tetrahedra,alpha_mask}=state.alpha;
-  const showIn=$("#ly-alpha-in").prop("checked");
-  const showOut=$("#ly-alpha-out").prop("checked");
-  if(!showIn&&!showOut)return;
-  const MAX=600;let ci=0,co=0;
-  const edges=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
-  for(let i=0;i<tetrahedra.length;i++){
-    const inside=alpha_mask[i];
-    if(inside&&(!showIn||ci>=MAX))continue;
-    if(!inside&&(!showOut||co>=MAX))continue;
-    const tet=tetrahedra[i];
-    const col=inside?state.colors.alphaIn:state.colors.alphaOut;
-    edges.forEach(([a,b])=>{
-      viewer.addLine({
-        start:{x:tet[a][0],y:tet[a][1],z:tet[a][2]},
-        end:{x:tet[b][0],y:tet[b][1],z:tet[b][2]},
-        color:col,lineWidth:state.alphaLineWidth,opacity:state.alphaOpacity,
-      });
-    });
-    if(inside)ci++;else co++;
-  }
-  updateAlphaInfo();
-}
-async function renderMeshes(data,showAll,sel){
-  const n=Math.min((data.ranked_pockets||[]).length,6);
-  for(let i=0;i<n;i++){
-    if(!showAll&&!sel.has(i))continue;
-    try{
-      const buf=await api.mesh(state.dataset,state.molecule,i+1);
-      const lines=parsePlyEdges(buf);
-      lines.forEach(([a,b])=>{
-        viewer.addLine({start:{x:a[0],y:a[1],z:a[2]},end:{x:b[0],y:b[1],z:b[2]},
-          color:state.colors.mesh,lineWidth:1.5,opacity:0.75});
-      });
-    }catch(e){}
-  }
-}
-function parsePlyEdges(buffer){
-  const text=new TextDecoder().decode(buffer);
-  const lines=text.split("\n");
-  let headerEnd=0,nVerts=0,nFaces=0;
-  for(let i=0;ies.length;i++){
-    const l=lines[i].trim();
-    if(l.startsWith("element vertex"))nVerts=parseInt(l.split(" ")[2]);
-    if(l.startsWith("element face"))nFaces=parseInt(l.split(" ")[2]);
-    if(l==="end_header"){headerEnd=i+1;break;}
-  }
-  const verts=[];
-  for(let i=headerEnd;i<headerEnd+nVerts;i++){
-    const p=lines[i].trim().split(/\s+/).map(Number);
-    verts.push([p[0],p[1],p[2]]);
-  }
-  const edges=[];
-  for(let i=headerEnd+nVerts;i<headerEnd+nVerts+nFaces;i++){
-    const p=lines[i].trim().split(/\s+/).map(Number);
-    const n=p[0],f=p.slice(1,1+n);
-    for(let j=0;j<n;j++)edges.push([verts[f[j]],verts[f[(j+1)%n]]]);
-  }
-  return edges;
-}
-function renderPocketCards(data){
-  const cards=$("#pocket-cards").empty();
-  const vols=data.pocket_volumes||[];
-  const deps=data.pocket_depths||[];
-  const areas=data.mouth_area||[];
-  const valid=data.ligand_validation||[];
-  const scores=data.ranking_scores||[];
-  const step=data.step_to_ligand;
-  const rp=data.ranked_pockets||[];
-  const indicesHit=valid.map((v,i)=>v?i:-1).filter(i=>i>=0);
-  const indicesToShow=indicesHit.length>0?indicesHit:rp.map((_,i)=>i);
-  state.selectedPockets.clear();
-  indicesHit.forEach(i=>state.selectedPockets.add(i));
-  indicesToShow.forEach(i=>{
-    const col=POCKET_COLORS[i%POCKET_COLORS.length];
-    const badge=valid[i]?'<span class="badge hit">✓ ligand</span>':"";
-    const card=$(`
-      <div class="pocket-card" data-idx="${i}" style="border-left-color:${col}">
-        <div class="p-title" style="color:${col}">Pocket #${i+1} ${badge}</div>
-        <div class="p-row"><span>Volume</span><span>${vols[i]?.toFixed(1)??"—"} Å³</span></div>
-        <div class="p-row"><span>Depth</span><span>${deps[i]?.toFixed(1)??"—"} Å</span></div>
-        <div class="p-row"><span>Mouth area</span><span>${areas[i]?.toFixed(1)??"—"} Å²</span></div>
-        <div class="p-row"><span>Score</span><span>${scores[i]?.toFixed(1)??"—"}</span></div>
-        <div class="p-row"><span>Validated</span><span>${valid[i]?"<span style='color:#4caf50'>Yes ✓</span>":"<span style='color:#f44336'>No</span>"}</span></div>
-      </div>`);
-    card.on("click",function(e){
-      const idx=parseInt($(this).data("idx"));
-      if(e.ctrlKey||e.metaKey){
-        if(state.selectedPockets.has(idx))state.selectedPockets.delete(idx);
-        else state.selectedPockets.add(idx);
-      }else{
-        if(state.selectedPockets.size===1&&state.selectedPockets.has(idx))state.selectedPockets.clear();
-        else{state.selectedPockets.clear();state.selectedPockets.add(idx);}
-      }
-      updateCardStyles();renderScene();
-    });
-    cards.append(card);
-  });
-  if(step)cards.append(`<div style="font-size:0.78rem;color:#b0bec5;margin-top:8px">Ligand at rank <b style="color:#4fc3f7">#${step}</b></div>`);
-  $("#selection-hint").show();
-  updateCardStyles();
-}
-function updateCardStyles(){
-  const sel=state.selectedPockets;
-  $(".pocket-card").each(function(){
-    const i=parseInt($(this).data("idx"));
-    $(this).toggleClass("selected",sel.has(i)).toggleClass("dimmed",sel.size>0&&!sel.has(i));
-  });
-}
-function initColorChips(){
-  $(".color-chip").each(function(){
-    const key=$(this).data("key");
-    if(state.colors[key])$(this).css("background-color",state.colors[key]);
-  });
-  $(".color-chip").on("click",function(){
-    const key=$(this).data("key");
-    if(!state.colors[key])return;
-    const $chip=$(this);
-    const $picker=$('<input type="color">').css({position:"fixed",left:"-9999px",top:"-9999px",opacity:0,width:0,height:0
-    const $chip=$(this);
-    const $picker=$('<input type="color">').css({position:"fixed",left:"-9999px",top:"-9999px",opacity:0,width:0,height:0});
-    $picker.val(state.colors[key]);
-    $("body").append($picker);
-    $picker.on("input change",function(){
-      const val=$(this).val();
-      state.colors[key]=val;
-      $chip.css("background-color",val);
-      if(key==="background"){
-        viewer.setBackgroundColor(val);
-        document.getElementById("viewer").style.background=val;
-        try{viewer.render();}catch(e){}
-      }else{
-        if(state.pockets)renderScene();
-      }
-    });
-    $picker.on("blur",function(){$(this).remove();});
-    $picker[0].click();
-  });
-}
-function bindUI(){
-  $("#sel-dataset").on("change",function(){
-    const ds=$(this).val();
-    if(ds)loadMolecules(ds);
-  });
-  $("#sel-molecule").on("change",function(){
-    const mol=$(this).val();
-    const ds=$("#sel-dataset").val();
-    if(mol&&ds)loadMolecule(ds,mol);
-  });
-  $("input[type=checkbox]").on("change",function(){
-    if(state.pockets)renderScene();
-  });
-  $("#btn-reset").on("click",()=>{viewer.zoomTo();viewer.render();});
-  $("#btn-style").on("click",()=>{
-    state.style=state.style==="cartoon"?"stick":"cartoon";
-    if(state.pockets)renderScene();
-  });
-  $("#btn-clear-sel").on("click",()=>{
-    state.selectedPockets.clear();
-    updateCardStyles();
-    renderScene();
-  });
-  $("#btn-export").on("click",()=>{
-    if(!state.dataset||!state.molecule){alert("Select a molecule first.");return;}
-    window.location=`/api/export/${state.dataset}/${state.molecule}`;
-  });
-  $("#slider-lw").on("input",function(){
-    state.alphaLineWidth=parseFloat($(this).val());
-    $("#lw-val").text($(this).val());
-    if(state.pockets)renderScene();
-  });
-  $("#slider-op").on("input",function(){
-    state.alphaOpacity=parseInt($(this).val())/100;
-    $("#op-val").text($(this).val());
-    if(state.pockets)renderScene();
-  });
-}
-function flatCoords(arr){
-  if(!arr||!arr.length)return[];
-  if(Array.isArray(arr[0]))return arr;
-  const out=[];
-  for(let i=0;i<arr.length-2;i+=3)out.push([arr[i],arr[i+1],arr[i+2]]);
-  return out;
-}
-function updateAlphaInfo(){
-  if(!state.alpha){$("#alpha-info").hide();return;}
-  const nIn=state.alpha.alpha_mask.filter(Boolean).length;
-  const nOut=state.alpha.alpha_mask.length-nIn;
-  $("#alpha-info").show().html(`<b>Alpha shape</b><br>Inside: <b>${nIn}</b> &middot; Outside: <b>${nOut}</b><br><span style="color:#607d8b;font-size:0.7rem">Max 600 shown per layer</span>`);
-}
-function showLoading(v){$("#loading").css("display",v?"flex":"none");}
-</script>
-</body>
-</html>
