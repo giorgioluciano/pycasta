@@ -1,0 +1,13 @@
+{
+    "total_molecules": 49,
+    "top1_percentage": 34.69,
+    "top3_percentage": 44.9,
+    "top5_percentage": 44.9,
+    "top_all_percentage": 44.9,
+    "average_step_to_ligand": 1.23,
+    "average_ligand_size": 3.43,
+    "average_pocket_volume": 3347.13,
+    "average_pocket_depth": 50.54,
+    "average_mouth_area": "N/A",
+    "average_mouth_perimeter": "N/A"
+}

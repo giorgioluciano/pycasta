@@ -46,6 +46,7 @@ from config import (
     STRICT_DISTANCE_THRESHOLD,
     UNBOUNDED_DIR,
     USE_CGAL,
+    WEIGHTED_DELAUNAY,
     USE_EXISTING_RESULTS,
     USE_SASA,
     USE_SASA_CONTACT_VALIDATION,
@@ -65,7 +66,7 @@ from utils.data_utils import (
     load_json,
     save_json,
     save_pocket_results_csv,
-    summarize_and_print_results,
+    
 )
 from utils.geometry_utils import (
     validate_ligand_in_extruded_mesh,
@@ -78,7 +79,10 @@ from utils.pocket_utils import (
     merge_nearby_clusters,
     save_pocket_properties,
 )
+
+
 from utils.preprocessing_utils import calculate_atomic_radii, load_and_separate_pdb
+from results_analysis import save_summary_csv, save_summary_json
 from utils.sasa_utils import compute_sasa, compute_ligand_contact_sasa, evaluate_sasa_contact
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -157,6 +161,7 @@ def process_pdb(pdb_path):
 
     result = {
         "pdb_path": pdb_path,
+        "triangulation_backend": None,  
         "ranked_pockets": [], "ranking_scores": [],
         "ligand_coords": [], "protein_coords": [], "protein_atoms": [],
         "step_to_ligand": None, "step_to_ligand_mesh": None,
@@ -194,16 +199,31 @@ def process_pdb(pdb_path):
         return result
 
     # Delaunay triangulation
-    logging.info("Running Delaunay triangulation...")
+    logging.info("Running triangulation...")
     try:
-        simplices = (
-            cgal_weighted_delaunay(protein_coords, radii)[0]
-            if USE_CGAL
-            else Delaunay(protein_coords).simplices
-        )
+        if USE_CGAL and WEIGHTED_DELAUNAY:
+            simplices, triangulation_info = cgal_weighted_delaunay(protein_coords, radii)
+            logging.info("Using weighted Delaunay via CGAL/pocketlab.")
+        else:
+            simplices = Delaunay(protein_coords).simplices
+            triangulation_info = None
+            logging.info("Using standard SciPy Delaunay.")
     except Exception as e:
-        logging.error(f"Delaunay failed for {pdb_path}: {e}")
+        logging.error(f"Triangulation failed for {pdb_path}: {e}")
         return result
+
+    simplices = np.asarray(simplices, dtype=int)
+    if simplices.ndim != 2 or simplices.shape[1] != 4:
+        logging.error(f"Invalid simplices shape: {simplices.shape}")
+        return result
+
+    result["triangulation_backend"] = (
+        "cgal_weighted_delaunay"
+        if USE_CGAL and WEIGHTED_DELAUNAY
+        else "scipy_delaunay"
+    )
+    logging.info(f"Triangulation backend: {result['triangulation_backend']}")
+
     tetra_positions = protein_coords[simplices]
 
     # Alpha shape
@@ -433,25 +453,35 @@ def main():
         logging.error("No PDB files found in BOUNDED_DIR.")
         sys.exit(1)
 
-    if UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and CORRESPONDENCE_FILE and os.path.exists(CORRESPONDENCE_FILE):
+        if UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and CORRESPONDENCE_FILE and os.path.exists(CORRESPONDENCE_FILE):
         logging.info("Mode: paired")
         results = run_analysis_mode(
             pdb_sources=bounded_files, analysis_type="paired",
             correspondence_df=pd.read_excel(CORRESPONDENCE_FILE),
         )
-        summarize_and_print_results(
-            results, analysis_type="paired",
-            output_file=os.path.join(out_dir, "paired_summary.json"),
-            csv_output_file=os.path.join(out_dir, "paired_summary.csv"),
+        save_summary_json(
+            results,
+            os.path.join(out_dir, "paired_summary.json"),
+            analysis_type="paired",
         )
+        save_summary_csv(
+            results,
+            os.path.join(out_dir, "paired_summary.csv"),
+        )
+
     elif not UNBOUNDED_DIR or not os.path.exists(UNBOUNDED_DIR):
         logging.info("Mode: single (bounded)")
         results = run_analysis_mode(pdb_sources=bounded_files, analysis_type="single")
-        summarize_and_print_results(
-            results, analysis_type="single",
-            output_file=os.path.join(out_dir, "single_summary.json"),
-            csv_output_file=os.path.join(out_dir, "single_summary.csv"),
+        save_summary_json(
+            results,
+            os.path.join(out_dir, "single_summary.json"),
+            analysis_type="single",
         )
+        save_summary_csv(
+            results,
+            os.path.join(out_dir, "single_summary.csv"),
+        )
+
     elif UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and not CORRESPONDENCE_FILE:
         logging.info("Mode: unbounded")
         unbounded_files = glob.glob(os.path.join(UNBOUNDED_DIR, "*.pdb"))
@@ -459,15 +489,20 @@ def main():
             logging.error("No PDB files found in UNBOUNDED_DIR.")
             sys.exit(1)
         results = run_analysis_mode(pdb_sources=unbounded_files, analysis_type="unbounded")
-        summarize_and_print_results(
-            results, analysis_type="unbounded",
-            output_file=os.path.join(out_dir, "unbounded_summary.json"),
-            csv_output_file=os.path.join(out_dir, "unbounded_summary.csv"),
+        save_summary_json(
+            results,
+            os.path.join(out_dir, "unbounded_summary.json"),
+            analysis_type="unbounded",
         )
+        save_summary_csv(
+            results,
+            os.path.join(out_dir, "unbounded_summary.csv"),
+        )
+
     else:
         logging.error("Invalid configuration: check UNBOUNDED_DIR and CORRESPONDENCE_FILE.")
         sys.exit(1)
-
+     
     logging.info(f"=== Analysis complete. Results in: {out_dir} ===")
 
 

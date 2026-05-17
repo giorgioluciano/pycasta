@@ -1,0 +1,7 @@
+{
+  "pdb_dir": "C:\\github\\pycasta\\data\\coach420\\pdb_short",
+  "run_name": "test_step_small",
+  "alpha": 1.4,
+  "maxtet": 50000,
+  "mode": "standard"
+}

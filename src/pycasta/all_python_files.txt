@@ -1,0 +1,3664 @@
+﻿### FILE: C:\github\pycasta\src\pycasta\__init__.py
+# Automatically added to make this a package
+
+
+### FILE: C:\github\pycasta\src\pycasta\adaptive_alpha.py
+# -*- coding: utf-8 -*-
+"""
+adaptive_alpha.py
+Funzioni per il calcolo e la diagnostica dell'alpha adattivo.
+"""
+import numpy as np
+import os
+import csv
+
+
+def compute_alpha_gap(tetra_positions, simplices, radii, alpha_values=None):
+    if alpha_values is None:
+        alpha_values = np.linspace(0.5, 5.0, 50)
+    if radii is None or len(radii) == 0:
+        return float(np.median(alpha_values))
+    radii_arr = np.array(radii)
+    gaps = []
+    for alpha in alpha_values:
+        mask = radii_arr <= alpha
+        gap = float(np.sum(mask)) / len(radii_arr)
+        gaps.append(gap)
+    gaps = np.array(gaps)
+    diffs = np.diff(gaps)
+    best_idx = int(np.argmax(diffs)) + 1
+    return float(alpha_values[best_idx])
+
+
+def get_adaptive_alpha(tetra_positions, simplices, radii, alpha_values=None):
+    return compute_alpha_gap(tetra_positions, simplices, radii, alpha_values=alpha_values)
+
+
+def save_alpha_diagnostics(alpha_values, gap_scores, best_alpha,
+                            output_dir="results", molecule_name="molecule"):
+    os.makedirs(output_dir, exist_ok=True)
+    filename = os.path.join(output_dir, f"{molecule_name}_alpha_diagnostics.csv")
+    with open(filename, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["alpha", "gap_score", "best_alpha"])
+        for alpha, score in zip(alpha_values, gap_scores):
+            writer.writerow([alpha, score, best_alpha])
+    return filename
+
+
+### FILE: C:\github\pycasta\src\pycasta\alpha_shape.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+alpha_shape.py
+
+Module for computing the alpha shape and for the flow_detection function.
+"""
+
+import os
+import numpy as np
+import logging
+from config import (
+    SIMPLE_SPLIT,
+    ATOM_SPLITTING,
+    ATOM_SPLITTING_MODE,
+    SAVE_ALPHA,
+    VERSION_TAG,
+    OUTPUT_DIR,
+    FILTER_AFTER_MERGE,
+    SASA_CONTACT_THRESHOLD,
+)
+from utils.geometry_utils import compute_all_circumsphere_radii, log_radii_statistics
+from scipy.spatial import KDTree
+from utils.pocket_utils import apply_splitting_to_shared_atoms
+
+
+def filter_alpha_complex_by_sasa(
+    tetrahedra, alpha_values, protein_coords, pdb_file, sasa_threshold
+):
+    from utils.sasa_utils import compute_sasa
+    from biopandas.pdb import PandasPdb
+
+    logging.info("Computing SASA for filtering the alpha complex...")
+    sasa_dict = compute_sasa(pdb_file, method="pymol", remove_ligand=True)
+    if sasa_dict is None:
+        logging.error("SASA computation failed; no filtering applied.")
+        return tetrahedra, alpha_values, np.ones_like(alpha_values, dtype=bool)
+    ppdb = PandasPdb().read_pdb(pdb_file)
+    atoms_df = ppdb.df["ATOM"]
+    atom_residues = atoms_df["residue_number"].values
+    from scipy.spatial import KDTree
+
+    tree = KDTree(protein_coords)
+    filtered_indices = []
+    total_tetra = len(alpha_values)
+    for i, tet in enumerate(tetrahedra):
+        centroid = np.mean(tet, axis=0)
+        dist, idx = tree.query(centroid)
+        residue = atom_residues[idx]
+        sasa = sasa_dict.get(str(residue), 0)
+        if sasa < sasa_threshold:
+            filtered_indices.append(i)
+    logging.info(
+        f"Tetrahedra: {total_tetra} total, {len(filtered_indices)} pass the SASA filter (threshold={sasa_threshold})."
+    )
+    filtered_tetrahedra = tetrahedra[filtered_indices]
+    filtered_alpha_values = alpha_values[filtered_indices]
+    filtered_mask = np.zeros_like(alpha_values, dtype=bool)
+    filtered_mask[filtered_indices] = True
+    return filtered_tetrahedra, filtered_alpha_values, filtered_mask
+
+
+def compute_alpha_complex_from_tetrahedra(
+    simplices,
+    tetra_positions,
+    alpha_value,
+    molecule_name=None,
+    protein_coords=None,
+    filter_by_sasa=False,
+    sasa_threshold=SASA_CONTACT_THRESHOLD,
+    pdb_file=None,
+):
+    """
+    Compute the alpha complex for a set of tetrahedra.
+
+    Returns:
+        alpha_mask: Boolean mask of tetrahedra with circumsphere radii below alpha_value.
+        radii: The circumsphere radii used.
+        tetra_positions: Possibly updated tetra_positions after SASA filtering.
+        simplices: The filtered simplices array, so that indices align with tetra_positions.
+    """
+    assert tetra_positions.ndim == 3 and tetra_positions.shape[1:] == (
+        4,
+        3,
+    ), f"Invalid tetra_positions shape: {tetra_positions.shape}"
+
+    # Compute circumsphere radii and initial alpha mask.
+    radii = compute_all_circumsphere_radii(tetra_positions)
+    log_radii_statistics(radii)
+    alpha_mask = (radii < alpha_value).astype(bool)
+
+    # Optionally, save the unfiltered alpha shape data.
+    if SAVE_ALPHA and molecule_name and protein_coords is not None:
+        version_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+        os.makedirs(version_dir, exist_ok=True)
+        out_file = os.path.join(version_dir, f"{molecule_name}.alpha.npz")
+        np.savez(
+            out_file,
+            alpha_values=radii,
+            alpha_mask=alpha_mask,
+            protein_coords=protein_coords,
+            tetrahedra=tetra_positions,
+        )
+        logging.info(f"Alpha shape data saved to {out_file}")
+
+    # If filtering by SASA is enabled, update tetra_positions and simplices.
+    if filter_by_sasa:
+        if pdb_file is None:
+            logging.error("pdb_file must be provided when filtering by SASA.")
+        else:
+            filtered_tetra, filtered_alpha_values, filtered_mask = (
+                filter_alpha_complex_by_sasa(
+                    tetra_positions, radii, protein_coords, pdb_file, sasa_threshold
+                )
+            )
+            # Update tetra_positions and radii based on the SASA filter.
+            tetra_positions = filtered_tetra
+            radii = filtered_alpha_values
+            # Recalculate alpha_mask from the filtered radii.
+            alpha_mask = radii < alpha_value
+            # Also update simplices using the same boolean mask.
+            simplices = simplices[filtered_mask]
+            version_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+            os.makedirs(version_dir, exist_ok=True)
+            out_file_filtered = os.path.join(
+                version_dir, f"{molecule_name}.alpha_filtered.npz"
+            )
+            np.savez(
+                out_file_filtered,
+                alpha_values=radii,
+                alpha_mask=alpha_mask,
+                protein_coords=protein_coords,
+                tetrahedra=tetra_positions,
+            )
+            logging.info(f"Filtered alpha shape data saved to {out_file_filtered}")
+
+    return alpha_mask, radii, tetra_positions, simplices
+
+
+def flow_detection(
+    simplices, alpha_mask, tetra_positions, protein_coords, flow_params=None
+):
+    """
+    Apply discrete flow on the tetrahedra to grow pockets.
+    This version uses a relative tolerance (tol_fraction) to decide if a neighbor is lower.
+    """
+    if flow_params is None:
+        flow_params = {}
+    sigma_p = flow_params.get("sigma_p", 1.0)
+    # Use a relative tolerance fraction (e.g., 0.01 means a 1% drop)
+    tol_fraction = flow_params.get("tol_fraction", 0.01)
+    max_steps = flow_params.get("max_steps", 100)
+    adaptive = flow_params.get("adaptive", False)
+    adaptive_factor = flow_params.get("adaptive_factor", 0.9)
+    min_steps = flow_params.get("min_steps", 0)
+
+    # Compute proxy values for all tetrahedra (e.g., based on circumsphere radii)
+    proxies = compute_all_circumsphere_radii(tetra_positions)
+    proxy_values = sigma_p * proxies
+
+    # Get indices of tetrahedra that are outside the alpha complex
+    empty_indices = np.where(~alpha_mask)[0]
+
+    # Build a face-to-tetrahedron mapping (neighbors sharing a face)
+    face_to_tetra = {}
+    for i, simplex in enumerate(simplices):
+        faces = [
+            tuple(sorted(simplex[[a, b, c]]))
+            for (a, b, c) in [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+        ]
+        for face in faces:
+            face_to_tetra.setdefault(face, []).append(i)
+
+    # Build neighbor dictionary for each empty tetrahedron
+    neighbor_dict = {}
+    for i in empty_indices:
+        faces = [
+            tuple(sorted(simplices[i, [a, b, c]]))
+            for (a, b, c) in [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+        ]
+        neighbors = set()
+        for face in faces:
+            neighbors.update(face_to_tetra.get(face, []))
+        # Exclude the tetrahedron itself and those that are not in the empty region
+        neighbor_dict[i] = [j for j in neighbors if j != i and not alpha_mask[j]]
+
+    # Flow: for each tetrahedron in empty_indices, try to follow a gradient descent
+    flow_target = {}
+    flow_steps = {}
+    total_steps = 0
+
+    for i in empty_indices:
+        current = i
+        steps = 0
+        current_proxy = proxy_values[current]
+        while steps < max_steps:
+            # Use relative tolerance: neighbor qualifies if its proxy is at least tol_fraction lower than current
+            lower_neighbors = [
+                j
+                for j in neighbor_dict[current]
+                if (current_proxy - proxy_values[j]) > tol_fraction * current_proxy
+            ]
+            if not lower_neighbors:
+                if adaptive:
+                    # Optionally, if no neighbor is found, increase tolerance (or adapt in some way)
+                    tol_fraction *= adaptive_factor
+                    lower_neighbors = [
+                        j
+                        for j in neighbor_dict[current]
+                        if (current_proxy - proxy_values[j])
+                        > tol_fraction * current_proxy
+                    ]
+                    if not lower_neighbors:
+                        break
+                else:
+                    break
+            next_current = min(lower_neighbors, key=lambda j: proxy_values[j])
+            current = next_current
+            current_proxy = proxy_values[current]
+            steps += 1
+        if steps >= min_steps:
+            flow_target[i] = current
+            flow_steps[i] = steps
+            total_steps += steps
+
+    average_steps = total_steps / max(len(flow_target), 1)
+    logging.info(f"Average number of flow steps per tetrahedron: {average_steps:.2f}")
+
+    # Group tetrahedra by their final sink (flow target)
+    sink_groups = {}
+    for i, sink in flow_target.items():
+        sink_groups.setdefault(sink, []).append(i)
+
+    final_pockets = []
+    connectivity_graph = {}
+    # For each sink group, build a connectivity graph among tetrahedra
+    for sink, tetra_indices in sink_groups.items():
+        graph = {i: [] for i in tetra_indices}
+        for idx, i in enumerate(tetra_indices):
+            for j in tetra_indices[idx + 1 :]:
+                if len(set(simplices[i]) & set(simplices[j])) == 3:
+                    graph[i].append(j)
+                    graph[j].append(i)
+        visited = set()
+        for node in tetra_indices:
+            if node not in visited:
+                component = []
+                stack = [node]
+                while stack:
+                    cur = stack.pop()
+                    if cur not in visited:
+                        visited.add(cur)
+                        component.append(cur)
+                        stack.extend(graph[cur])
+                final_pockets.append(component)
+                connectivity_graph[len(final_pockets) - 1] = graph
+
+    logging.info(f"Flow detection found {len(final_pockets)} preliminary pockets.")
+    final_pockets = apply_splitting_to_shared_atoms(
+        final_pockets, protein_coords, flow_params.get("atom_radii")
+    )
+    return final_pockets, flow_steps, connectivity_graph
+
+
+### FILE: C:\github\pycasta\src\pycasta\atomic_radii.py
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar  7 20:51:16 2025
+
+@author: giorgio
+"""
+
+# atomic_radii.py
+"""
+Module containing a dictionary of atomic radii (in Ã…) for common elements.
+
+You can expand or modify this dictionary as needed.
+"""
+
+ATOMIC_RADII_DICT = {
+    "H": 1.20,
+    "C": 1.70,
+    "N": 1.55,
+    "O": 1.52,
+    "S": 1.80,
+    # Add more elements as needed.
+}
+
+# Default radius if element is not found in the dictionary.
+DEFAULT_RADIUS = 1.5
+
+
+### FILE: C:\github\pycasta\src\pycasta\cgal_wdelaunay.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+cgal_wdelaunay.py
+
+Weighted Delaunay triangulation wrapper.
+Uses CGAL via pocketlab when enabled, otherwise falls back to SciPy Delaunay.
+"""
+
+import logging
+import numpy as np
+from scipy.spatial import Delaunay
+
+from config import USE_CGAL, WEIGHTED_DELAUNAY
+
+
+def cgal_weighted_delaunay(protein_coords, radii):
+    if USE_CGAL and WEIGHTED_DELAUNAY:
+        try:
+            from pocketlab import build_regular_triangulation
+
+            result = build_regular_triangulation(protein_coords, radii)
+
+            if isinstance(result, dict) and result.get("ok") and "cells_idx" in result:
+                simplices = np.asarray(result["cells_idx"], dtype=int)
+                logging.info(
+                    f"[CGAL] Weighted Delaunay built successfully: {len(simplices)} cells."
+                )
+                return simplices, result
+
+            logging.warning(
+                "[CGAL] pocketlab returned an invalid result, falling back to SciPy Delaunay."
+            )
+
+        except Exception as e:
+            logging.warning(
+                f"[CGAL] pocketlab unavailable or failed ({e}). Falling back to SciPy Delaunay."
+            )
+
+    simplices = Delaunay(protein_coords).simplices
+    logging.info(f"[SciPy] Standard Delaunay built: {len(simplices)} simplices.")
+    return simplices, None
+
+
+### FILE: C:\github\pycasta\src\pycasta\check_pocket_stats.py
+import os
+import json
+
+# Path alla directory dove ci sono i tuoi file json
+json_dir = "C:/my_test/pycas/results/"  # <-- CAMBIA con il tuo percorso
+
+total_files = 0
+top1_found = 0
+top3_found = 0
+topall_found = 0
+
+print("Processing files...", end="", flush=True)
+
+for i, (root, dirs, files) in enumerate(os.walk(json_dir)):
+    for file in files:
+        if file.endswith(".json"):
+            total_files += 1
+            file_path = os.path.join(root, file)
+            with open(file_path, "r") as f:
+                data = json.load(f)
+            mesh = data.get("ligand_containment_mesh", [])
+            if mesh:
+                if mesh[0] is True:
+                    top1_found += 1
+                if any(mesh[:3]):
+                    top3_found += 1
+                if any(mesh):
+                    topall_found += 1
+
+            # Progresso ogni 100 file
+            if total_files % 100 == 0:
+                print(".", end="", flush=True)
+
+print(" done!\n")
+
+# Calcola percentuali
+if total_files > 0:
+    pct_top1 = 100 * top1_found / total_files
+    pct_top3 = 100 * top3_found / total_files
+    pct_topall = 100 * topall_found / total_files
+
+    print(f"Total files: {total_files}")
+    print(f"Top1 found: {top1_found} ({pct_top1:.1f}%)")
+    print(f"Top3 found: {top3_found} ({pct_top3:.1f}%)")
+    print(f"Top ALL found: {topall_found} ({pct_topall:.1f}%)")
+else:
+    print("No json files found.")
+
+
+### FILE: C:\github\pycasta\src\pycasta\config.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Configuration file for the pocket detection and evaluation pipeline.
+Adjust the paths and parameters as needed for your environment.
+"""
+_current_alpha = None
+# =============================================================================
+# Directories and Files
+# =============================================================================
+# Directories (relative or absolute paths)
+
+BOUNDED_DIR = "data/bounded"
+UNBOUNDED_DIR = "data/unbounded"  # None
+
+DATASET_DIR = "data"  # Directory containing additional data such as tables
+OUTPUT_DIR = "results"
+
+# Correspondence file (for paired analysis)
+# CORRESPONDENCE_FILE = "data/tables/correspondence.xlsx"
+CORRESPONDENCE_FILE = None
+
+# =============================================================================
+# General Processing Settings
+# =============================================================================
+INCLUDE_WATER = False  # Whether to include water molecules during processing
+CONNECTIVITY_THRESHOLD = 1
+
+# =============================================================================
+# PyMOL and SASA Settings
+# =============================================================================
+# Use PyMOL2 if True; otherwise, use standard PyMOL API
+USE_PYMOL2 = False
+USE_SASA = True
+SASA_METHOD = "pymol"  # Options: "pymol2" or "pymol"
+
+# =============================================================================
+# Delaunay and CGAL Settings
+# =============================================================================
+USE_CGAL = True  # Enable weighted Delaunay triangulation
+WEIGHTED_DELAUNAY = True  # (Currently a dummy alternative)
+
+# =============================================================================
+# Alpha Shape Filtering
+# =============================================================================
+FILTER_ALPHA_BY_SASA = False  # Whether to filter the alpha complex using SASA
+SASA_THRESHOLD = 0  # SASA threshold for filtering
+
+# =============================================================================
+# Splitting Settings
+# =============================================================================
+ATOM_SPLITTING = True  # Enable atom splitting (True/False)
+ATOM_SPLITTING_MODE = (
+    "CAST"  # Options: "SIMPLE" for equal splitting, "CAST" for a CAST-like split
+)
+SIMPLE_SPLIT = False
+
+# =============================================================================
+# Pocket Calculation Settings
+# =============================================================================
+CALCULATE_MOUTH_PARAMETERS = True  # Optionally compute pocket mouth parameters
+VOLUME_METHOD = "analytic"  # Options: "analytic" or "montecarlo"
+
+# =============================================================================
+# Ligand Contact Settings
+# =============================================================================
+LIGAND_CONTACT_METHOD = "sasa"  # Options: "sasa" or "distance"
+LIGAND_CONTACT_THRESHOLD = 4.0
+
+LIGAND_THRESHOLD = 4.0
+STRICT_DISTANCE_THRESHOLD = 4.0
+
+# =============================================================================
+# Alpha Shape and Flow Settings
+# ============================================================================
+
+SEMIAUTO_ALPHA = False
+MANUAL_ALPHA = 2.0
+ALPHA_PREFERENCE = None
+
+
+def set_alpha(value):
+    global _current_alpha
+    _current_alpha = value
+
+
+def get_alpha():
+    if _current_alpha is not None:
+        print(f"[CONFIG] get_alpha(): using CURRENT_ALPHA = {_current_alpha}")
+        return _current_alpha
+    elif ALPHA_PREFERENCE is not None:
+        print(f"[CONFIG] get_alpha(): using ALPHA_PREFERENCE = {ALPHA_PREFERENCE}")
+        return ALPHA_PREFERENCE
+    elif SEMIAUTO_ALPHA:
+        print(f"[CONFIG] get_alpha(): using SEMIAUTO_ALPHA = {MANUAL_ALPHA}")
+        return MANUAL_ALPHA
+    else:
+        print(f"[CONFIG] get_alpha(): using MANUAL_ALPHA = {MANUAL_ALPHA}")
+        return MANUAL_ALPHA
+
+
+SAVE_ALPHA = True
+
+MIN_POCKET_VOLUME = 50  # Minimum volume threshold for valid pockets
+FILTER_AFTER_MERGE = True
+
+FLOW_METHOD = "discrete_approx"
+FLOW_KWARGS = {
+    "max_steps": 100,
+    "tol": 0.01,
+    "sigma_p": 1.4,
+    "adaptive": True,  # Enable adaptive tolerance
+    "adaptive_factor": 0.5,  # Factor to reduce tolerance when no lower neighbor is found
+    "base_step_size": 3,
+    "min_steps": 3,
+    "debug": True,
+    "write_steps": True,
+}
+
+# =============================================================================
+# Merging Settings
+# =============================================================================
+MERGE_CLUSTERS = True
+MERGE_THRESHOLD = 18
+
+
+def set_merge_threshold(value):
+    global MERGE_THRESHOLD
+    MERGE_THRESHOLD = value
+    print(
+        f"[CONFIG] set_merge_threshold(): updated MERGE_THRESHOLD = {MERGE_THRESHOLD}"
+    )
+
+
+def get_merge_threshold():
+    return MERGE_THRESHOLD
+
+
+# =============================================================================
+# Pocket Validation Settings
+# =============================================================================
+USE_SASA_CONTACT_VALIDATION = False
+SASA_CONTACT_THRESHOLD = 4.0
+
+VALIDATION_METHOD = "mesh_extrusion"  # Options: "sasa", "fake_ball", "mesh_extrusion"
+FAKE_SPHERE_RADIUS = 50
+MESH_EXTRUSION_DISTANCE = 4
+SAVE_EXTRUDED_MESHES = True  # Save extruded pocket meshes as .ply or .obj files
+
+# =============================================================================
+# Output and Version Settings
+# =============================================================================
+NUM_POCKETS_TO_VALIDATE = 20
+ALPHA_RANKING = 1
+BETA_RANKING = 1
+NUM_POCKETS_TO_SAVE = 5
+USE_EXISTING_RESULTS = True
+DEBUG = True
+
+VERSION_TAG = "bov1"
+
+
+### FILE: C:\github\pycasta\src\pycasta\dual_sets.py
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Mar 29 10:52:03 2025
+
+@author: giorgio
+"""
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+dual_sets.py
+
+Module for computing the dual set of a pocket and for extracting dual mouth components.
+
+The idea is as follows:
+  1. Compute the closure of the pocket, i.e. collect all faces (triangles) from every tetrahedron
+     in the pocket.
+  2. For each face, assign a "filtration value" (we use the minimum circumsphere radius of any
+     tetrahedron that contributed that face).
+  3. Compute the dual set by keeping only those faces whose filtration value is at least a given
+     threshold (usually the chosen alpha value).
+  4. Compute the boundary of the dual set (those faces that appear only once) and then extract the
+     connected components, each of which corresponds to a pocket mouth.
+     
+Note: This is a simplified version based on the pseudoâ€algorithm. You may need to further refine it
+for your specific application.
+"""
+
+import numpy as np
+import logging
+from collections import defaultdict
+from scipy.spatial import ConvexHull
+
+
+def get_faces_from_tetrahedron(tet, decimals=3):
+    """
+    Given a tetrahedron (4x3 array of coordinates), return a list of its 4 triangle faces.
+    Each face is represented as a tuple of 3 vertex tuples, with coordinates rounded to a
+    specified number of decimals (to allow consistent comparison).
+    """
+    # Round vertices
+    vertices = [tuple(np.round(v, decimals=decimals)) for v in tet]
+    # Tetrahedron faces: there are 4 triangles
+    face_indices = [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+    faces = [tuple(sorted([vertices[i] for i in inds])) for inds in face_indices]
+    return faces
+
+
+def compute_closure_of_pocket(pocket_indices, tetra_positions, decimals=3):
+    """
+    Compute the closure of a pocket defined by a list of tetrahedron indices.
+    The closure is the union of all faces (triangles) of the tetrahedra.
+
+    Returns:
+      closure: a dictionary mapping each face (tuple) to its occurrence count.
+    """
+    closure = {}
+    for idx in pocket_indices:
+        tet = tetra_positions[idx]
+        faces = get_faces_from_tetrahedron(tet, decimals=decimals)
+        for face in faces:
+            closure[face] = closure.get(face, 0) + 1
+    return closure
+
+
+def compute_boundary_from_closure(closure):
+    """
+    The boundary of the closure is defined as the set of faces that appear only once.
+
+    Returns:
+      boundary: a set of faces.
+    """
+    boundary = {face for face, count in closure.items() if count == 1}
+    return boundary
+
+
+def compute_face_filtration_values(pocket_indices, tetra_positions, radii, decimals=3):
+    """
+    For each face in the pocket, compute its filtration value as the minimum circumsphere radius
+    among the tetrahedra (in the pocket) that contributed that face.
+
+    Parameters:
+      pocket_indices: list of indices of tetrahedra in the pocket.
+      tetra_positions: array of shape (n_tetra, 4, 3) with tetrahedron coordinates.
+      radii: array of circumsphere radii corresponding to tetra_positions.
+
+    Returns:
+      face_filtration: dict mapping face (tuple) to a filtration value.
+    """
+    face_filtration = {}
+    for idx in pocket_indices:
+        tet = tetra_positions[idx]
+        face_value = radii[
+            idx
+        ]  # Use the tetrahedronâ€™s circumsphere radius as the proxy filtration value
+        faces = get_faces_from_tetrahedron(tet, decimals=decimals)
+        for face in faces:
+            if face in face_filtration:
+                face_filtration[face] = min(face_filtration[face], face_value)
+            else:
+                face_filtration[face] = face_value
+    return face_filtration
+
+
+def compute_dual_set_from_closure(closure, face_filtration, alpha_value):
+    """
+    Compute the dual set of a pocket by removing from the closure all faces whose filtration value is
+    less than the given alpha_value.
+
+    Returns:
+      dual_set: set of faces (triangles) that form the dual representation.
+    """
+    dual_set = {
+        face
+        for face in closure
+        if face_filtration.get(face, float("inf")) >= alpha_value
+    }
+    return dual_set
+
+
+def build_connectivity_graph(simplices):
+    """
+    Build a connectivity graph among simplices.
+    Two simplices are considered connected if they share at least two vertices (i.e. an edge).
+
+    Parameters:
+      simplices: iterable of simplices (e.g., faces represented as tuples of vertex coordinates).
+
+    Returns:
+      graph: dict mapping each simplex to a list of neighboring simplices.
+    """
+    graph = defaultdict(list)
+    simplices = list(simplices)
+    for i, s in enumerate(simplices):
+        for j in range(i + 1, len(simplices)):
+            t = simplices[j]
+            # For triangles, sharing two vertices means they share an edge.
+            if len(set(s) & set(t)) >= 2:
+                graph[s].append(t)
+                graph[t].append(s)
+    return graph
+
+
+def find_connected_components(graph):
+    """
+    Find connected components in a graph.
+
+    Parameters:
+      graph: dict mapping node to list of neighbors.
+
+    Returns:
+      components: list of sets, each set representing a connected component.
+    """
+    visited = set()
+    components = []
+    for node in graph:
+        if node not in visited:
+            component = set()
+            stack = [node]
+            while stack:
+                cur = stack.pop()
+                if cur not in visited:
+                    visited.add(cur)
+                    component.add(cur)
+                    stack.extend(graph[cur])
+            components.append(component)
+    return components
+
+
+def compute_dual_mouths(boundary_faces, global_dual=None):
+    """
+    Given the boundary faces of a pocket (from the closure) and an optional global dual complex,
+    compute the connected components that represent the mouth(s) of the pocket.
+
+    Parameters:
+      boundary_faces: set of faces (triangles) forming the boundary of the pocket.
+      global_dual: set of faces belonging to the dual complex of the entire structure (optional).
+
+    Returns:
+      mouth_components: list of sets, each set representing one connected mouth.
+    """
+    # If provided, remove faces that are in the global dual complex.
+    if global_dual is not None:
+        filtered_boundary = {face for face in boundary_faces if face not in global_dual}
+    else:
+        filtered_boundary = boundary_faces
+
+    # Build connectivity graph among the remaining boundary faces.
+    graph = build_connectivity_graph(filtered_boundary)
+    # Extract connected components.
+    mouth_components = find_connected_components(graph)
+    return mouth_components
+
+
+# Example integration function
+def compute_dual_set_for_pocket(
+    pocket_indices, tetra_positions, radii, alpha_value, decimals=3
+):
+    """
+    Given a pocket (indices into tetra_positions), compute:
+      - the closure (all faces),
+      - the filtration value for each face,
+      - the dual set (faces with filtration value >= alpha_value),
+      - and the boundary of the dual set.
+
+    Returns a dictionary with keys:
+      'closure', 'face_filtration', 'dual_set', and 'boundary'
+    """
+    closure = compute_closure_of_pocket(
+        pocket_indices, tetra_positions, decimals=decimals
+    )
+    face_filtration = compute_face_filtration_values(
+        pocket_indices, tetra_positions, radii, decimals=decimals
+    )
+    dual_set = compute_dual_set_from_closure(closure, face_filtration, alpha_value)
+    boundary = compute_boundary_from_closure(closure)
+    return {
+        "closure": closure,
+        "face_filtration": face_filtration,
+        "dual_set": dual_set,
+        "boundary": boundary,
+    }
+
+
+# =============================================================================
+# if __name__ == "__main__":
+#     # Example demonstration
+#     # Suppose we have a pocket consisting of tetrahedra with indices [0, 1, 2]
+#     pocket = [0, 1, 2]
+#     # Example tetra_positions (each tetrahedron is 4 points in 3D)
+#     tetra_positions = np.array([
+#         [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]],
+#         [[1, 0, 0], [1, 1, 0], [0, 1, 0], [1, 0, 1]],
+#         [[0, 1, 0], [1, 1, 0], [0, 1, 1], [0, 0, 1]],
+#     ])
+#     # For demonstration, let's compute radii for these tetrahedra
+#     # (In practice, you would use your actual function compute_all_circumsphere_radii)
+#     def dummy_radii(tets):
+#         return np.array([1.0, 1.5, 2.0])
+#     radii = dummy_radii(tetra_positions)
+#
+#     alpha_value = 1.5  # example threshold (could be your MANUAL_ALPHA)
+#
+#     dual_info = compute_dual_set_for_pocket(pocket, tetra_positions, radii, alpha_value, decimals=3)
+#     logging.info("Closure of the pocket:")
+#     logging.info(dual_info["closure"])
+#     logging.info("Dual set:")
+#     logging.info(dual_info["dual_set"])
+#     # For mouth duals, one would then call compute_dual_mouths with the boundary.
+#     mouth_duals = compute_dual_mouths(dual_info["boundary"], global_dual=None)
+#     logging.info("Mouth dual components:")
+#     logging.info(mouth_duals)
+#
+# =============================================================================
+
+
+### FILE: C:\github\pycasta\src\pycasta\evaluate_coach420.py
+# -*- coding: utf-8 -*-
+"""
+evaluate_coach420.py
+
+Valutazione rigorosa di PyCASTA su COACH420.
+Calcola metriche comparabili con la letteratura (P2Rank, fpocket, COACH):
+  - Top1/Top3/Top5 overall
+  - Top1/Top3/Top5 per fasce di numero pockets (fair comparison)
+  - Success Rate con DVO (Distance-Volume Overlap) proxy
+  - Distribuzione rank e numero pockets
+
+Usage:
+    cd C:\\github\\pycasta\\src\\pycasta
+    python evaluate_coach420.py
+
+Output:
+    results\\coach420_eval\\evaluation_report.csv
+    results\\coach420_eval\\evaluation_summary.txt
+"""
+
+import os
+import json
+import glob
+import numpy as np
+import pandas as pd
+from tabulate import tabulate
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# CONFIGURAZIONE
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+RESULTS_DIR    = "results/coach420_v1"          # cartella con i JSON del run
+GROUND_TRUTH   = "C:/github/pycasta/data/coach420/coach420_ground_truth.csv"
+OUTPUT_DIR     = "results/coach420_eval"
+DCA_THRESHOLD  = 4.0   # Angstrom â€” soglia standard letteratura
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# CARICA RISULTATI DAI JSON
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def load_results(results_dir):
+    records = []
+    json_files = glob.glob(os.path.join(results_dir, "*_pockets.json"))
+    print(f"[INFO] Trovati {len(json_files)} file JSON in {results_dir}")
+
+    for jf in json_files:
+        with open(jf) as f:
+            data = json.load(f)
+
+        filename = os.path.basename(jf).replace("_pockets.json", ".pdb")
+
+        # Distanze mesh (lista di float o None)
+        mesh_dists = data.get("ligand_mesh_distances", [])
+        mesh_dists = [d for d in mesh_dists if d is not None]
+
+        # Numero pockets trovate
+        num_pockets = len(data.get("ranked_pockets", []))
+
+        # Rank della pocket validata
+        rank = None
+        containment = data.get("ligand_containment_mesh", [])
+        for i, val in enumerate(containment):
+            if val:
+                rank = i + 1
+                break
+
+        # DCA-style: distanza minima dal ligando alla pocket #1
+        min_dist_top1 = mesh_dists[0] if mesh_dists else None
+
+        # Pocket volumes
+        volumes = data.get("pocket_volumes", [])
+        avg_volume = float(np.mean(volumes)) if volumes else None
+
+        records.append({
+            "file":          filename,
+            "num_pockets":   num_pockets,
+            "rank":          rank,
+            "min_dist_top1": min_dist_top1,
+            "avg_volume":    avg_volume,
+            "all_dists":     mesh_dists,
+            # Top N flags
+            "top1":  rank == 1 if rank else False,
+            "top3":  rank <= 3 if rank else False,
+            "top5":  rank <= 5 if rank else False,
+            "top10": rank <= 10 if rank else False,
+        })
+
+    return pd.DataFrame(records)
+
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# METRICA DCA STANDARD (come P2Rank)
+# misura: distanza minima tra centro di massa pocket
+# e centro di massa ligando < DCA_THRESHOLD
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def compute_dca_metrics(df, threshold=DCA_THRESHOLD):
+    """
+    Per ogni struttura: la pocket Ã¨ 'trovata' se
+    min_dist_top1 < threshold (Top1 DCA).
+    Oppure se qualsiasi delle prime N pockets ha dist < threshold.
+    """
+    rows = []
+    for _, row in df.iterrows():
+        dists = row["all_dists"]
+        found_at = None
+        for i, d in enumerate(dists):
+            if d is not None and d < threshold:
+                found_at = i + 1
+                break
+        rows.append(found_at)
+    df["dca_rank"] = rows
+    df["dca_top1"] = df["dca_rank"] == 1
+    df["dca_top3"] = df["dca_rank"].apply(lambda x: x <= 3 if x else False)
+    df["dca_top5"] = df["dca_rank"].apply(lambda x: x <= 5 if x else False)
+    return df
+
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# REPORT COMPLETO
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def print_report(df):
+    n = len(df)
+    lines = []
+
+    lines.append("=" * 60)
+    lines.append("PYCASTA â€” COACH420 EVALUATION REPORT")
+    lines.append(f"Strutture analizzate: {n}")
+    lines.append(f"Soglia DCA: {DCA_THRESHOLD} Ã…")
+    lines.append("=" * 60)
+
+    # â”€â”€ Metriche mesh_extrusion (run attuale) â”€â”€
+    lines.append("\n[1] METRICHE MESH_EXTRUSION (run attuale)")
+    table1 = [
+        ["Top1%",   f"{df['top1'].mean()*100:.2f}%",  f"{df['top1'].sum()}/{n}"],
+        ["Top3%",   f"{df['top3'].mean()*100:.2f}%",  f"{df['top3'].sum()}/{n}"],
+        ["Top5%",   f"{df['top5'].mean()*100:.2f}%",  f"{df['top5'].sum()}/{n}"],
+        ["Top10%",  f"{df['top10'].mean()*100:.2f}%", f"{df['top10'].sum()}/{n}"],
+    ]
+    lines.append(tabulate(table1, headers=["Metrica", "%", "N/Tot"], tablefmt="github"))
+
+    # â”€â”€ Metriche DCA standard (comparabili con letteratura) â”€â”€
+    lines.append(f"\n[2] METRICHE DCA < {DCA_THRESHOLD}Ã… (standard letteratura)")
+    table2 = [
+        ["DCA Top1%", f"{df['dca_top1'].mean()*100:.2f}%", f"{df['dca_top1'].sum()}/{n}"],
+        ["DCA Top3%", f"{df['dca_top3'].mean()*100:.2f}%", f"{df['dca_top3'].sum()}/{n}"],
+        ["DCA Top5%", f"{df['dca_top5'].mean()*100:.2f}%", f"{df['dca_top5'].sum()}/{n}"],
+    ]
+    lines.append(tabulate(table2, headers=["Metrica", "%", "N/Tot"], tablefmt="github"))
+
+    # â”€â”€ Confronto letteratura â”€â”€
+    lines.append("\n[3] CONFRONTO CON LETTERATURA (DCA Top1%)")
+    table3 = [
+        ["PyCASTA (questo run)",  f"{df['dca_top1'].mean()*100:.2f}%"],
+        ["P2Rank",                "55.20%"],
+        ["PUResNet",              "52.80%"],
+        ["COACH",                 "50.10%"],
+        ["Kalasanty",             "51.00%"],
+        ["fpocket (stima)",       "~45%"],
+    ]
+    lines.append(tabulate(table3, headers=["Metodo", "Top1% DCA"], tablefmt="github"))
+
+    # â”€â”€ Analisi per fasce numero pockets â”€â”€
+    lines.append("\n[4] TOP1% PER FASCIA NUMERO POCKETS (bias check)")
+    fascia_data = []
+    for lo, hi in [(1,5), (6,10), (11,20), (21,50), (51,999)]:
+        subset = df[(df["num_pockets"] >= lo) & (df["num_pockets"] <= hi)]
+        if len(subset) == 0:
+            continue
+        top1 = subset["dca_top1"].mean() * 100
+        fascia_data.append([
+            f"{lo}-{hi} pockets",
+            len(subset),
+            f"{top1:.1f}%",
+            f"{subset['num_pockets'].median():.0f}"
+        ])
+    lines.append(tabulate(fascia_data,
+        headers=["Fascia", "N strutture", "DCA Top1%", "Mediana pockets"],
+        tablefmt="github"))
+
+    # â”€â”€ Statistiche pockets â”€â”€
+    lines.append("\n[5] STATISTICHE NUMERO POCKETS TROVATE")
+    stats = [
+        ["Mediana",  f"{df['num_pockets'].median():.0f}"],
+        ["Media",    f"{df['num_pockets'].mean():.1f}"],
+        ["Min",      f"{df['num_pockets'].min()}"],
+        ["Max",      f"{df['num_pockets'].max()}"],
+        ["Std",      f"{df['num_pockets'].std():.1f}"],
+    ]
+    lines.append(tabulate(stats, headers=["Statistica", "Valore"], tablefmt="github"))
+
+    # â”€â”€ Casi difficili (rank > 5 o non trovato) â”€â”€
+    failed = df[df["dca_rank"].isna() | (df["dca_rank"] > 5)]
+    lines.append(f"\n[6] STRUTTURE NON RISOLTE (DCA > 5Ã… o non trovato): {len(failed)}")
+    fail_table = failed[["file","num_pockets","dca_rank","min_dist_top1"]]\
+        .sort_values("num_pockets", ascending=False).head(20)
+    lines.append(tabulate(fail_table, headers="keys",
+        tablefmt="github", showindex=False))
+
+    report = "\n".join(lines)
+    print(report)
+    return report
+
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# MAIN
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def main():
+    df = load_results(RESULTS_DIR)
+    df = compute_dca_metrics(df)
+
+    report = print_report(df)
+
+    # Salva report testuale
+    report_path = os.path.join(OUTPUT_DIR, "evaluation_summary.txt")
+    with open(report_path, "w") as f:
+        f.write(report)
+    print(f"\n[SAVED] {report_path}")
+
+    # Salva CSV dettagliato
+    csv_path = os.path.join(OUTPUT_DIR, "evaluation_detail.csv")
+    df.drop(columns=["all_dists"]).to_csv(csv_path, index=False)
+    print(f"[SAVED] {csv_path}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+### FILE: C:\github\pycasta\src\pycasta\find_pymol.py
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 11 15:17:35 2025
+
+@author: giorg
+"""
+
+import os
+import shutil
+import subprocess
+
+# Possibili nomi ed estensioni dell'eseguibile PyMOL
+pymol_names = [
+    "pymol.exe",  # Installazione classica
+    "PyMOLWin.exe",  # Vecchie versioni di Windows
+    "pymol-open-source.exe",  # Alcuni bundle conda
+]
+
+# Possibili directory in cui PyMOL potrebbe trovarsi
+possible_dirs = [
+    r"C:\Program Files\Schrodinger\PyMOL",
+    r"C:\Program Files\PyMOL",
+    r"C:\Program Files (x86)\PyMOL",
+    r"C:\Program Files (x86)\Schrodinger\PyMOL",
+    r"C:\Users\%USERNAME%\AppData\Local\Programs\PyMOL",
+    r"C:\Users\%USERNAME%\AppData\Local\PyMOL",
+]
+
+# Cerca nei PATH di sistema
+pymol_in_path = shutil.which("pymol")
+if pymol_in_path:
+    print(f"Found pymol in system PATH: {pymol_in_path}")
+    pymol_path = pymol_in_path
+else:
+    # Prova le directory comuni
+    found = False
+    for dir_ in possible_dirs:
+        dir_ = os.path.expandvars(dir_)
+        for exe in pymol_names:
+            exe_path = os.path.join(dir_, exe)
+            if os.path.isfile(exe_path):
+                print(f"Found pymol here: {exe_path}")
+                pymol_path = exe_path
+                found = True
+                break
+        if found:
+            break
+    else:
+        print("PyMOL not found in common locations or system PATH.")
+        pymol_path = None
+
+# Esegui un comando di test se trovato
+if pymol_path:
+    print(f"Trying to launch PyMOL: {pymol_path}")
+    # Lancia PyMOL senza file (solo per test)
+    try:
+        subprocess.run([pymol_path], check=True)
+    except Exception as e:
+        print(f"Could not launch PyMOL: {e}")
+else:
+    print("Please install PyMOL or add it to your system PATH.")
+
+
+### FILE: C:\github\pycasta\src\pycasta\grid_search.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+grid_search.py
+
+Script to perform a grid search over model parameters.
+"""
+
+import itertools
+import json
+import logging
+import os
+import numpy as np
+from run_analysis import process_pdb
+from config import (
+    OUTPUT_DIR,
+    VERSION_TAG,
+    MANUAL_ALPHA,
+    MIN_POCKET_VOLUME,
+    MERGE_THRESHOLD,
+    FLOW_KWARGS,
+)
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+alpha_values = [5.0, 5.4, 6.0]
+volume_thresholds = [40, 50, 60]
+merge_thresholds = [3, 4, 5]
+flow_tols = [0.5, 0.6]
+flow_max_steps = [30, 50]
+flow_adaptive_factors = [0.9, 0.8]
+
+parameter_grid = list(
+    itertools.product(
+        alpha_values,
+        volume_thresholds,
+        merge_thresholds,
+        flow_tols,
+        flow_max_steps,
+        flow_adaptive_factors,
+    )
+)
+
+logging.info(f"Total parameter combinations to test: {len(parameter_grid)}")
+
+
+def evaluate_result(result, target_min=1, target_max=3):
+    num_pockets = len(result.get("ranked_pockets", []))
+    if target_min <= num_pockets <= target_max:
+        return 0
+    else:
+        penalty = abs(
+            num_pockets - (target_min if num_pockets < target_min else target_max)
+        )
+        return penalty
+
+
+test_pdb = "data/bounded_test/1acj.pdb"
+best_score = float("inf")
+best_params = None
+results_summary = []
+
+for combo in parameter_grid:
+    alpha_val, vol_thresh, merge_thresh, flow_tol, flow_max, flow_adapt = combo
+    from config import MANUAL_ALPHA, MIN_POCKET_VOLUME, MERGE_THRESHOLD, FLOW_KWARGS
+
+    MANUAL_ALPHA = alpha_val
+    MIN_POCKET_VOLUME = vol_thresh
+    MERGE_THRESHOLD = merge_thresh
+    FLOW_KWARGS["tol"] = flow_tol
+    FLOW_KWARGS["max_steps"] = flow_max
+    FLOW_KWARGS["adaptive_factor"] = flow_adapt
+    logging.info(
+        f"Testing parameters: alpha={alpha_val}, volume_threshold={vol_thresh}, merge_threshold={merge_thresh}, flow_tol={flow_tol}, max_steps={flow_max}, adaptive_factor={flow_adapt}"
+    )
+    result = process_pdb(test_pdb)
+    score = evaluate_result(result)
+    logging.info(
+        f"Result: {len(result.get('ranked_pockets', []))} pockets, score={score}"
+    )
+    results_summary.append(
+        {
+            "params": {
+                "alpha": alpha_val,
+                "volume_threshold": vol_thresh,
+                "merge_threshold": merge_thresh,
+                "flow_tol": flow_tol,
+                "flow_max_steps": flow_max,
+                "flow_adaptive_factor": flow_adapt,
+            },
+            "num_pockets": len(result.get("ranked_pockets", [])),
+            "score": score,
+        }
+    )
+    if score < best_score:
+        best_score = score
+        best_params = combo
+
+logging.info(f"Best score: {best_score} with parameters: {best_params}")
+output_file = os.path.join(
+    OUTPUT_DIR, f"parameter_grid_search_summary_{VERSION_TAG}.json"
+)
+with open(output_file, "w") as f:
+    json.dump(results_summary, f, indent=4)
+logging.info(f"Grid search summary saved to: {output_file}")
+
+
+### FILE: C:\github\pycasta\src\pycasta\optimize_alpha.py
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 31 21:14:08 2025
+
+@author: giorgio
+"""
+
+import numpy as np
+import pandas as pd
+import os
+from config import set_alpha, set_merge_threshold, get_merge_threshold
+from run_entrypoint import run_all_analysis
+
+# Optional: dynamic setter for flow kwargs
+from config import FLOW_KWARGS
+
+
+def set_flow_params(min_steps=None, min_volume=None, adaptive_factor=None, tol=None):
+    if min_steps is not None:
+        FLOW_KWARGS["min_steps"] = min_steps
+    if min_volume is not None:
+        FLOW_KWARGS["min_volume"] = min_volume
+    if adaptive_factor is not None:
+        FLOW_KWARGS["adaptive_factor"] = adaptive_factor
+    if tol is not None:
+        FLOW_KWARGS["tol"] = tol
+
+
+def optimize_alpha_and_flow(
+    alpha_values,
+    min_steps_values,
+    min_volume_values,
+    adaptive_factor_values,
+    tol_values,
+    merge_thresholds,
+    output_csv="alpha_flow_optimization_results.csv",
+):
+    """
+    Runs analysis for each combination of alpha and flow parameters,
+    collects performance metrics.
+    """
+    records = []
+
+    for alpha in alpha_values:
+        set_alpha(alpha)
+        for min_steps in min_steps_values:
+            for min_volume in min_volume_values:
+                for adaptive_factor in adaptive_factor_values:
+                    for tol in tol_values:
+                        for merge_threshold in merge_thresholds:
+                            set_flow_params(
+                                min_steps=min_steps,
+                                min_volume=min_volume,
+                                adaptive_factor=adaptive_factor,
+                                tol=tol,
+                            )
+                            set_merge_threshold(merge_threshold)
+                            print(
+                                f"\nðŸš€ Testing alpha={alpha}, min_steps={min_steps}, min_volume={min_volume}, adaptive_factor={adaptive_factor}, tol={tol}, merge_threshold={merge_threshold}"
+                            )
+                            try:
+                                summary = run_all_analysis()
+                                record = {
+                                    "alpha": alpha,
+                                    "min_steps": min_steps,
+                                    "min_volume": min_volume,
+                                    "adaptive_factor": adaptive_factor,
+                                    "tol": tol,
+                                    "merge_threshold": merge_threshold,
+                                    "top1_percentage": summary.get(
+                                        "top1_percentage", 0
+                                    ),
+                                    "top3_percentage": summary.get(
+                                        "top3_percentage", 0
+                                    ),
+                                    "top5_percentage": summary.get(
+                                        "top5_percentage", 0
+                                    ),
+                                    "top_all_percentage": summary.get(
+                                        "top_all_percentage", 0
+                                    ),
+                                    "average_step_to_ligand": summary.get(
+                                        "average_step_to_ligand", "N/A"
+                                    ),
+                                    "average_ligand_size": summary.get(
+                                        "average_ligand_size", "N/A"
+                                    ),
+                                    "average_pocket_volume": summary.get(
+                                        "average_pocket_volume", "N/A"
+                                    ),
+                                    "average_pocket_depth": summary.get(
+                                        "average_pocket_depth", "N/A"
+                                    ),
+                                    "average_mouth_area": summary.get(
+                                        "average_mouth_area", "N/A"
+                                    ),
+                                    "average_mouth_perimeter": summary.get(
+                                        "average_mouth_perimeter", "N/A"
+                                    ),
+                                    "total_molecules": summary.get(
+                                        "total_molecules", 0
+                                    ),
+                                }
+                                records.append(record)
+                            except Exception as e:
+                                print(f"âŒ Error: {e}")
+                                continue
+
+    df = pd.DataFrame(records)
+    df.to_csv(output_csv, index=False)
+    print(f"\nâœ… Optimization completed. Results saved to: {output_csv}")
+    return df
+
+
+if __name__ == "__main__":
+    test_alphas = [2.0, 2.2]
+    test_min_steps = [3]
+    test_min_volumes = [50]
+    test_adaptive_factors = [0.5]
+    test_tols = [0.01]
+    test_merge_thresholds = [16, 18]
+
+    optimize_alpha_and_flow(
+        test_alphas,
+        test_min_steps,
+        test_min_volumes,
+        test_adaptive_factors,
+        test_tols,
+        test_merge_thresholds,
+    )
+
+
+### FILE: C:\github\pycasta\src\pycasta\PDB_downloader.py
+import os
+import requests
+
+# Lista degli ID PDB di Set2
+
+pdb_set_3b = [
+    "1MEM",
+    "1NLJ",
+    "1PTY",
+    "1G1F",
+    "1JF7",
+    "1NNY",
+    "1ONZ",
+    "1Q1M",
+    "1BMQ",
+    "1QS4",
+]
+
+# Directory dove salvare i file PDB
+save_directory = "c://temp/pdb_files/set3b"
+
+# Creare la directory se non esiste
+os.makedirs(save_directory, exist_ok=True)
+
+
+def download_pdb(pdb_id):
+    url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(os.path.join(save_directory, f"{pdb_id}.pdb"), "wb") as file:
+            file.write(response.content)
+        print(f"Downloaded {pdb_id}.pdb")
+    else:
+        print(f"Failed to download {pdb_id}.pdb")
+
+
+# Scaricare ogni file PDB di Set2
+for pdb_id in pdb_set_3b:
+    download_pdb(pdb_id)
+
+
+pdb_set_1ids = [
+    "1bid",
+    "3tms",
+    "1cdo",
+    "8adh",
+    "1dwd",
+    "1hxf",
+    "1fbp",
+    "2fbp",
+    "1gca",
+    "1gcg",
+    "1hew",
+    "1hel",
+    "1hyt",
+    "1npc",
+    "1inc",
+    "1esa",
+    "1rbp",
+    "1brq",
+    "1rob",
+    "8rat",
+    "1stp",
+    "1swb",
+    "1ulb",
+    "1ula",
+    "2ifb",
+    "1ifb",
+    "3ptb",
+    "3ptn",
+    "2ypi",
+    "1ypi",
+    "4dfr",
+    "5dfr",
+    "4phv",
+    "3phv",
+    "5cna",
+    "2ctv",
+    "7cpa",
+    "8adh",
+    "1a6w",
+    "1a6u",
+    "1apu",
+    "3app",
+    "1acj",
+    "1qif",
+    "1blh",
+    "1djb",
+    "1byb",
+    "1bya",
+    "1hfc",
+    "1cge",
+    "1ida",
+    "1hsi",
+    "1ivd",
+    "1nna",
+    "1mrg",
+    "1ahc",
+    "1mtw",
+    "2tga",
+    "1okm",
+    "4ca2",
+    "1pdz",
+    "1pdy",
+    "1phd",
+    "1phc",
+    "1pso",
+    "1psn",
+    "1qpe",
+    "3lck",
+    "1rne",
+    "1bbs",
+    "1snc",
+    "1stn",
+    "1srf",
+    "1pts",
+    "1stp",
+    "2rta",
+    "2ctc",
+    "2ctb",
+    "2h4n",
+    "2cba",
+    "2pk4",
+    "1krn",
+    "2sim",
+    "2sil",
+    "2tmn",
+    "1l3f",
+    "3gch",
+    "1chg",
+    "3mth",
+    "6ins",
+    "5p2p",
+    "3p2p",
+    "1imb",
+    "1ime",
+    "6rsa",
+    "7rat",
+]
+
+
+pdb_ids_set2 = [
+    "1g9v",
+    "1gkc",
+    "1gm8",
+    "1gpk",
+    "1hnn",
+    "1hp0",
+    "1hq2",
+    "1hvy",
+    "1hwi",
+    "1hww",
+    "1ia1",
+    "1ig3",
+    "1j3j",
+    "1jd0",
+    "1jje",
+    "1jla",
+    "1k3u",
+    "1ke5",
+    "1kzk",
+    "1l2s",
+    "1l7f",
+    "1lpz",
+    "1lrh",
+    "1m2z",
+    "1meh",
+    "1mmv",
+    "1mzc",
+    "1n1m",
+    "1n2j",
+    "1n2v",
+    "1n46",
+    "1nav",
+    "1of1",
+    "1of6",
+    "1opk",
+    "1oq5",
+    "1owe",
+    "1oyt",
+    "1p2y",
+    "1p62",
+    "1pmn",
+    "1q1g",
+    "1q41",
+    "1q4g",
+    "1r1h",
+    "1r55",
+    "1r58",
+    "1r9o",
+    "1s19",
+    "1s3v",
+    "1sg0",
+    "1sj0",
+    "1sq5",
+    "1sqn",
+    "1t40",
+    "1t46",
+    "1t9b",
+    "1tow",
+    "1tt1",
+    "1tz8",
+    "1u1c",
+    "1u4d",
+    "1uml",
+    "1unl",
+    "1uou",
+    "1v0p",
+    "1v48",
+    "1v4s",
+    "1vcj",
+    "1w1p",
+    "1w2g",
+    "1x8x",
+    "1xm6",
+    "1xoq",
+    "1xoz",
+    "1y6b",
+    "1ygc",
+    "1yqy",
+    "1yv3",
+    "1yvf",
+    "1ywr",
+    "1z95",
+    "2bm2",
+    "2br1",
+    "2bsm",
+]
+
+pdb_ids_3a = [
+    "1O86",
+    "1E66",
+    "1GPK",
+    "1PWL",
+    "1PWM",
+    "1T41",
+    "1IEP",
+    "1E1X",
+    "1H07",
+    "1H08",
+    "1KE6",
+    "1KE8",
+    "1KE9",
+    "4COX",
+    "1KIJ",
+    "1KZN",
+    "1M17",
+    "1C14",
+    "1I2Z",
+    "1EZQ",
+    "1E9X",
+    "1EA1",
+    "1EET",
+    "1EP4",
+    "1FK9",
+    "1RTH",
+    "1TO3",
+    "1DMP",
+    "1HVR",
+    "1HWR",
+    "1QBS",
+    "1HW8",
+    "1HW9",
+    "1HWI",
+    "1HWJ",
+    "1HWK",
+    "1HWL",
+    "1NF7",
+    "1RV1",
+    "1A4G",
+    "1F8B",
+    "1MWE",
+    "1NNC",
+    "2QWK",
+    "1KV1",
+    "1OYN",
+    "1PTW",
+    "1Q9M",
+    "1RKO",
+    "1UDT",
+    "1UDU",
+    "1QMF",
+    "1KTS",
+]
+
+pdb_ids_3b = [
+    "1MEM",
+    "1NLJ",
+    "1PTY",
+    "1G1F",
+    "1JF7",
+    "1NNY",
+    "1ONZ",
+    "1Q1M",
+    "1BMQ",
+    "1QS4",
+]
+
+
+### FILE: C:\github\pycasta\src\pycasta\ply_to_obj.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+ply_to_obj.py
+
+Script to convert .ply files to .obj format.
+"""
+
+import trimesh
+import os
+
+ply_path_1 = "/mnt/data/1rob_pocket_1.ply"
+ply_path_2 = "/mnt/data/1rob_pocket_2.ply"
+
+mesh1 = trimesh.load(ply_path_1, file_type="ply")
+mesh2 = trimesh.load(ply_path_2, file_type="ply")
+
+obj_path_1 = ply_path_1.replace(".ply", ".obj")
+obj_path_2 = ply_path_2.replace(".ply", ".obj")
+
+mesh1.export(obj_path_1)
+mesh2.export(obj_path_2)
+
+print(obj_path_1, obj_path_2)
+
+
+### FILE: C:\github\pycasta\src\pycasta\pocket_detection.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+pocket_detection.py
+
+Module for detecting and ranking pockets in a protein structure.
+Uses alpha shape calculation, discrete flow, and cluster merging.
+"""
+
+import logging
+import numpy as np
+from alpha_shape import compute_alpha_complex_from_tetrahedra, flow_detection
+from ranking import compute_ranking_scores
+from config import MIN_POCKET_VOLUME, FLOW_KWARGS, MERGE_CLUSTERS, MERGE_THRESHOLD
+from utils.pocket_utils import merge_nearby_clusters
+from dual_sets import compute_dual_set_for_pocket, compute_dual_mouths
+from config import get_alpha, get_merge_threshold
+
+
+# Analytic pocket volume computation defined here
+def compute_analytic_pocket_volume(tetra_positions, pocket_indices):
+    pocket_tetra = tetra_positions[pocket_indices]
+    vec1 = pocket_tetra[:, 1] - pocket_tetra[:, 0]
+    vec2 = pocket_tetra[:, 2] - pocket_tetra[:, 0]
+    vec3 = pocket_tetra[:, 3] - pocket_tetra[:, 0]
+    volumes = np.abs(np.einsum("ij,ij->i", np.cross(vec1, vec2), vec3)) / 6.0
+    return float(np.sum(volumes))
+
+
+def detect_pockets(
+    protein_coords,
+    simplices=None,
+    tetra_positions=None,
+    alpha_mask=None,
+    min_volume_threshold=None,
+    flow_params=None,
+    merge_clusters=None,
+    merge_threshold=None,
+    molecule_name=None,
+    radii=None,
+):
+    if min_volume_threshold is None:
+        min_volume_threshold = MIN_POCKET_VOLUME
+    if flow_params is None:
+        flow_params = FLOW_KWARGS
+    if merge_clusters is None:
+        merge_clusters = MERGE_CLUSTERS
+    if merge_threshold is None:
+        merge_threshold = get_merge_threshold()
+    logging.info(f"[CONFIG] Merge threshold currently set to: {merge_threshold}")
+    if tetra_positions is None:
+        tetra_positions = protein_coords[simplices]
+    logging.info(f"Delaunay triangulation: {len(simplices)} tetrahedra found.")
+    max_index = len(protein_coords) - 1
+    if np.max(simplices) > max_index:
+        raise ValueError(
+            f"ERROR: Some simplex indices exceed protein_coords size ({max_index})."
+        )
+
+    from config import get_alpha
+
+    alpha_value = get_alpha()
+
+    if alpha_mask is None or radii is None:
+        alpha_mask, radii, tetra_positions, simplices = (
+            compute_alpha_complex_from_tetrahedra(
+                simplices, tetra_positions, alpha_value, molecule_name, protein_coords
+            )
+        )
+
+    logging.info(f"Using alpha shape with alpha = {alpha_value}")
+    logging.info(
+        f"Alpha shape retained {int(np.sum(alpha_mask))} tetrahedra out of {len(alpha_mask)}."
+    )
+    if np.sum(alpha_mask) == 0:
+        logging.warning("Alpha shape filtered out all tetrahedra. No pockets detected.")
+        return [], [], []
+    pockets, flow_steps, connectivity_graph = flow_detection(
+        simplices, alpha_mask, tetra_positions, protein_coords, flow_params
+    )
+    logging.info(f"Flow detection found {len(pockets)} preliminary pockets.")
+    valid_pockets = []
+    for pocket in pockets:
+        if all(0 <= idx <= max_index for idx in pocket):
+            valid_pockets.append(pocket)
+    if merge_clusters:
+        pockets = merge_nearby_clusters(valid_pockets, tetra_positions, merge_threshold)
+        logging.info(
+            f"After merging (threshold={merge_threshold}), {len(pockets)} pockets remain."
+        )
+    else:
+        pockets = valid_pockets
+    pocket_volumes = [
+        compute_analytic_pocket_volume(tetra_positions, pocket) for pocket in pockets
+    ]
+    filtered = [
+        (p, v) for p, v in zip(pockets, pocket_volumes) if v >= min_volume_threshold
+    ]
+    if not filtered:
+        logging.warning(
+            f"No pockets exceed the minimum volume threshold of {min_volume_threshold} Ã…Â³."
+        )
+        return {
+            "ranked_pockets": [],
+            "representative_points": [],
+            "ranking_scores": [],
+            "dual_sets_info": [],
+            "mouths_info": [],
+        }
+    pockets, pocket_volumes = zip(*filtered)
+    ranking_scores = compute_ranking_scores(
+        pocket_volumes, pockets, flow_steps, connectivity_graph, tetra_positions
+    )
+    ranked_data = sorted(
+        zip(pockets, pocket_volumes, ranking_scores), key=lambda x: x[2], reverse=True
+    )
+    ranked_pockets, pocket_volumes, ranking_scores = zip(*ranked_data)
+
+  
+    representative_points = [
+        np.mean(tetra_positions[p].reshape(-1, 3), axis=0) for p in ranked_pockets
+    ]
+    logging.info(f"Final number of pockets in {molecule_name}: {len(ranked_pockets)}")
+    # Compute dual set information for each pocket:
+    dual_sets_info = (
+        []
+    )  # Will store the dual set info (closure, dual set, boundary, etc.)
+    mouths_info = []  # Will store the computed mouth dual components for each pocket
+
+    for pocket in ranked_pockets:
+        # Compute the dual set info for this pocket.
+        # Here, we use the current MANUAL_ALPHA as a proxy threshold.
+        dual_info = compute_dual_set_for_pocket(
+            pocket, tetra_positions, radii, alpha_value=alpha_value, decimals=3
+        )
+        dual_sets_info.append(dual_info)
+        # Compute the dual mouth components from the boundary of the closure.
+        mouth_duals = compute_dual_mouths(dual_info["boundary"], global_dual=None)
+        mouths_info.append(mouth_duals)
+
+    # Optionally, store these dual representations in the result dictionary:
+    # Return all relevant information in a dictionary:
+    return {
+        "ranked_pockets": ranked_pockets,
+        "representative_points": representative_points,
+        "ranking_scores": ranking_scores,
+        "dual_sets_info": dual_sets_info,
+        "mouths_info": mouths_info,
+    }
+
+
+### FILE: C:\github\pycasta\src\pycasta\pymol_vis.py
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 11 15:12:38 2025
+
+@author: giorg
+"""
+
+import os
+import subprocess
+
+
+pdb_file = "data/bounded/1acj.pdb"
+ply_file = "results/bov1/pocket_pdbs/1acj/1acj_ranked_1.pdb"
+script = f"""
+load {pdb_file}, protein
+load {ply_file}, pocket
+show surface, protein
+color slate, protein
+show mesh, pocket
+color orange, pocket
+orient
+"""
+
+with open("tmp_load_script.pml", "w") as f:
+    f.write(script)
+
+# Percorso completo al batch PyMOL trovato
+PYMOL_PATH = r"C:\Users\giorg\miniconda3\envs\debug\Scripts\pymol.BAT"
+
+# Lancia PyMOL interattivo con lo script
+subprocess.run([PYMOL_PATH, "-r", "tmp_load_script.pml"])
+
+
+### FILE: C:\github\pycasta\src\pycasta\ranking.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+ranking.py
+
+Module for computing the ranking scores of detected pockets.
+"""
+
+
+def compute_ranking_scores(
+    volumes, pockets, flow_steps, connectivity_graph, tetra_positions
+):
+    import numpy as np
+    import logging
+
+    scores = []
+    for i, (volume, pocket) in enumerate(zip(volumes, pockets)):
+        n_steps = flow_steps.get(i, 1)
+        n_connections = len(connectivity_graph.get(i, []))
+        norm_volume = volume
+        norm_steps = np.log1p(n_steps)
+        norm_connectivity = np.log1p(n_connections)
+        score = 1.0 * norm_volume + 0.5 * norm_steps + 0.2 * norm_connectivity
+        logging.debug(
+            f"Pocket {i+1}: volume={volume:.2f}, steps={n_steps}, connections={n_connections}, score={score:.2f}"
+        )
+        scores.append(score)
+    return scores
+
+
+### FILE: C:\github\pycasta\src\pycasta\results_analysis.py
+import json
+import logging
+import os
+from collections import Counter
+
+import numpy as np
+import pandas as pd
+from tabulate import tabulate
+
+from config import VALIDATION_METHOD
+
+
+def safe_sum_bool(lst):
+    return sum(bool(x) for x in lst) if isinstance(lst, list) else "N/A"
+
+
+def safe_any(lst):
+    return any(bool(x) for x in lst) if isinstance(lst, list) else False
+
+
+def safe_distances(dist_list):
+    return [d for d in dist_list if isinstance(d, (int, float)) and not np.isnan(d)]
+
+
+def _get_validation_containment_and_distances(result):
+    if VALIDATION_METHOD == "mesh_extrusion":
+        containment = result.get("ligand_containment_mesh", [])
+        distances = safe_distances(result.get("ligand_mesh_distances", []))
+    elif VALIDATION_METHOD == "sasa":
+        containment = result.get("ligand_containment_strict", [])
+        distances = safe_distances(result.get("ligand_to_pocket_distances", []))
+    else:
+        containment = []
+        distances = []
+    return containment, distances
+
+
+def _is_paired(results):
+    return bool(results) and "bounded_file" in results[0]
+
+
+def summarize_results(results, analysis_type="single"):
+    total = len(results)
+    if total == 0:
+        logging.warning("No valid results found to summarize.")
+        print("No results to summarize.")
+        return {}, pd.DataFrame()
+
+    valid_steps = [
+        res.get("step_to_ligand")
+        for res in results
+        if isinstance(res.get("step_to_ligand"), int)
+    ]
+
+    top1 = sum(1 for s in valid_steps if s == 1)
+    top3 = sum(1 for s in valid_steps if s <= 3)
+    top5 = sum(1 for s in valid_steps if s <= 5)
+    top_all = len(valid_steps)
+
+    ligand_sizes = [len(res.get("ligand_coords", [])) for res in results]
+    pocket_volumes = [
+        vol
+        for res in results
+        for vol in res.get("pocket_volumes", [])
+        if isinstance(vol, (int, float))
+    ]
+    pocket_depths = [
+        depth
+        for res in results
+        for depth in res.get("pocket_depths", [])
+        if isinstance(depth, (int, float))
+    ]
+    mouth_areas = [
+        area
+        for res in results
+        for area in res.get("mouth_area", [])
+        if isinstance(area, (int, float))
+    ]
+    mouth_perimeters = [
+        perim
+        for res in results
+        for perim in res.get("mouth_perimeter", [])
+        if isinstance(perim, (int, float))
+    ]
+
+    summary = {
+        "total_molecules": total,
+        "top1_percentage": round(top1 / total * 100, 2),
+        "top3_percentage": round(top3 / total * 100, 2),
+        "top5_percentage": round(top5 / total * 100, 2),
+        "top_all_percentage": round(top_all / total * 100, 2),
+        "average_step_to_ligand": round(np.mean(valid_steps), 2) if valid_steps else "N/A",
+        "average_ligand_size": round(np.mean(ligand_sizes), 2) if ligand_sizes else "N/A",
+        "average_pocket_volume": round(np.mean(pocket_volumes), 2) if pocket_volumes else "N/A",
+        "average_pocket_depth": round(np.mean(pocket_depths), 2) if pocket_depths else "N/A",
+        "average_mouth_area": round(np.mean(mouth_areas), 2) if mouth_areas else "N/A",
+        "average_mouth_perimeter": round(np.mean(mouth_perimeters), 2) if mouth_perimeters else "N/A",
+    }
+
+    table = []
+
+    if _is_paired(results):
+        header = [
+            "File Pair",
+            "Top1",
+            "Top3",
+            "Top5",
+            "Rank (B/U)",
+            "#Pockets",
+            "#Validated",
+            "Validation",
+            "Contact",
+            "Min. Dist. (Ã…)",
+            "RMSD (Ã…)",
+        ]
+        for r in results:
+            file_pair = f"{r.get('bounded_file', 'N/A')} / {r.get('unbounded_file', 'N/A')}"
+            top1_val = "Yes" if r.get("is_top1_bounded") and r.get("is_top1_unbounded") else "No"
+            top3_val = "Yes" if r.get("is_top3_bounded") and r.get("is_top3_unbounded") else "No"
+            top5_val = "Yes" if r.get("is_top5_bounded") and r.get("is_top5_unbounded") else "No"
+            validation_used = VALIDATION_METHOD.capitalize()
+
+            containment, distances = _get_validation_containment_and_distances(r)
+            num_validated = safe_sum_bool(containment)
+            contact = "Yes" if safe_any(containment) else "No"
+            rank_info = f"{r.get('bounded_pocket_rank', 'None')}/{r.get('unbounded_pocket_rank', 'None')}"
+            num_pockets = len(r.get("pocket_volumes", []))
+            min_distance = round(min(distances), 2) if distances else "N/A"
+            rmsd = round(r.get("alignment_rmsd", float("nan")), 2)
+
+            table.append([
+                file_pair,
+                top1_val,
+                top3_val,
+                top5_val,
+                rank_info,
+                num_pockets,
+                num_validated,
+                validation_used,
+                contact,
+                min_distance,
+                rmsd,
+            ])
+
+        print("\nPaired Analysis Summary:")
+        print(tabulate(table, headers=header, tablefmt="github"))
+
+    else:
+        header = [
+            "File",
+            "Top1",
+            "Top3",
+            "Top5",
+            "Top All",
+            "Rank",
+            "Validation",
+            "#Pockets",
+            "#Validated",
+            "Contact",
+            "Min. Dist. (Ã…)",
+            "Avg. Volume",
+            "Avg. Depth",
+        ]
+        for res in results:
+            filename = os.path.basename(res.get("pdb_path", res.get("file", "N/A")))
+            step = res.get("step_to_ligand")
+            top1_val = "Yes" if step == 1 else "No"
+            top3_val = "Yes" if isinstance(step, int) and step <= 3 else "No"
+            top5_val = "Yes" if isinstance(step, int) and step <= 5 else "No"
+            top_all_val = "Yes" if isinstance(step, int) else "No"
+            rank = step if isinstance(step, int) else "N/A"
+            validation_used = VALIDATION_METHOD.capitalize()
+
+            containment, distances = _get_validation_containment_and_distances(res)
+            num_validated = safe_sum_bool(containment)
+            contact = "Yes" if safe_any(containment) else "No"
+            num_pockets = res.get("num_pockets", len(res.get("pocket_volumes", [])))
+            min_distance = round(min(distances), 2) if distances else "N/A"
+            avg_volume = round(np.mean(res.get("pocket_volumes", [])), 2) if res.get("pocket_volumes") else "N/A"
+            avg_depth = round(np.mean(res.get("pocket_depths", [])), 2) if res.get("pocket_depths") else "N/A"
+
+            table.append([
+                filename,
+                top1_val,
+                top3_val,
+                top5_val,
+                top_all_val,
+                rank,
+                validation_used,
+                num_pockets,
+                num_validated,
+                contact,
+                min_distance,
+                avg_volume,
+                avg_depth,
+            ])
+
+        print("\nSummary Table:")
+        print(tabulate(table, headers=header, tablefmt="github"))
+
+    print("\nPerformance Summary:")
+    perf = [
+        ["Top1 %", summary["top1_percentage"]],
+        ["Top3 %", summary["top3_percentage"]],
+        ["Top5 %", summary["top5_percentage"]],
+        ["Top All %", summary["top_all_percentage"]],
+    ]
+    print(tabulate(perf, tablefmt="github"))
+
+    df = pd.DataFrame(table, columns=header)
+    return summary, df
+
+
+def save_summary_json(results, output_json, analysis_type="single"):
+    summary, df = summarize_results(results, analysis_type=analysis_type)
+    payload = {
+        "analysis_type": analysis_type,
+        "summary": summary,
+        "table": df.to_dict(orient="records"),
+    }
+    os.makedirs(os.path.dirname(output_json), exist_ok=True)
+    with open(output_json, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    logging.info(f"Summary saved to JSON: {output_json}")
+    return payload
+
+
+def save_summary_csv(results, output_csv, analysis_type="single"):
+    _, df = summarize_results(results, analysis_type=analysis_type)
+    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+    df.to_csv(output_csv, index=False)
+    logging.info(f"Summary table saved to CSV: {output_csv}")
+    return df
+
+
+### FILE: C:\github\pycasta\src\pycasta\run_analysis.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+run_analysis.py
+
+Pipeline principale di pocket detection su file PDB.
+Supporta tre modalitÃ : single (bounded), unbounded, paired.
+Risultati salvati in OUTPUT_DIR/<VERSION_TAG>/ come JSON e CSV.
+"""
+
+import glob
+import logging
+import os
+import sys
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+from Bio.PDB import Superimposer
+from Bio.PDB.Atom import Atom
+from scipy.spatial import Delaunay, KDTree
+from scipy.spatial.distance import cdist
+
+from config import (
+    BOUNDED_DIR,
+    CORRESPONDENCE_FILE,
+    DATASET_DIR,
+    FAKE_SPHERE_RADIUS,
+    FILTER_ALPHA_BY_SASA,
+    FLOW_KWARGS,
+    INCLUDE_WATER,
+    LIGAND_CONTACT_METHOD,
+    LIGAND_CONTACT_THRESHOLD,
+    MERGE_CLUSTERS,
+    MERGE_THRESHOLD,
+    MESH_EXTRUSION_DISTANCE,
+    MIN_POCKET_VOLUME,
+    NUM_POCKETS_TO_SAVE,
+    NUM_POCKETS_TO_VALIDATE,
+    OUTPUT_DIR,
+    SASA_CONTACT_THRESHOLD,
+    SASA_METHOD,
+    SASA_THRESHOLD,
+    SAVE_EXTRUDED_MESHES,
+    SIMPLE_SPLIT,
+    STRICT_DISTANCE_THRESHOLD,
+    UNBOUNDED_DIR,
+    USE_CGAL,
+    WEIGHTED_DELAUNAY,
+    USE_EXISTING_RESULTS,
+    USE_SASA,
+    USE_SASA_CONTACT_VALIDATION,
+    VALIDATION_METHOD,
+    VERSION_TAG,
+    VOLUME_METHOD,
+    get_alpha,
+)
+
+from alpha_shape import compute_alpha_complex_from_tetrahedra
+from cgal_wdelaunay import cgal_weighted_delaunay
+from pocket_detection import compute_analytic_pocket_volume, detect_pockets
+from ranking import compute_ranking_scores
+
+from utils.data_utils import (
+    convert_numpy_types,
+    load_json,
+    save_json,
+    save_pocket_results_csv,
+    
+)
+from utils.geometry_utils import (
+    validate_ligand_in_extruded_mesh,
+    validate_ligand_in_fake_sphere,
+)
+from utils.pocket_utils import (
+    apply_splitting_to_shared_atoms,
+    compute_mouth_parameters,
+    compute_volume_for_tetra_group,
+    merge_nearby_clusters,
+    save_pocket_properties,
+)
+
+
+from utils.preprocessing_utils import calculate_atomic_radii, load_and_separate_pdb
+from results_analysis import save_summary_csv, save_summary_json
+from utils.sasa_utils import compute_sasa, compute_ligand_contact_sasa, evaluate_sasa_contact
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logging.info(f"Validation method: {VALIDATION_METHOD}")
+
+
+# â”€â”€ Alignment helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _make_atom(coord):
+    return Atom(
+        name="X", coord=coord, bfactor=0.0, occupancy=1.0,
+        altloc=" ", fullname=" X ", serial_number=1, element="X",
+    )
+
+
+def match_atoms_by_residue_and_name(fixed_atoms, moving_atoms, allowed_atom_names=("CA",)):
+    fixed_dict  = {(a["resid"], a["atom_name"]): a["coord"] for a in fixed_atoms  if a["atom_name"] in allowed_atom_names}
+    moving_dict = {(a["resid"], a["atom_name"]): a["coord"] for a in moving_atoms if a["atom_name"] in allowed_atom_names}
+    common = sorted(fixed_dict.keys() & moving_dict.keys())
+    if not common:
+        logging.warning("No matching atoms found for alignment.")
+        return [], []
+    logging.info(f"Matched {len(common)} atoms for alignment ({list(allowed_atom_names)}).")
+    return [fixed_dict[k] for k in common], [moving_dict[k] for k in common]
+
+
+def align_using_superimposer(fixed_coords, moving_coords, return_transform=False):
+    fixed_coords  = np.array(fixed_coords)
+    moving_coords = np.array(moving_coords)
+    n = min(len(fixed_coords), len(moving_coords))
+    if len(fixed_coords) != len(moving_coords):
+        logging.warning(f"Atom count mismatch ({len(fixed_coords)} vs {len(moving_coords)}), using first {n}.")
+        fixed_coords, moving_coords = fixed_coords[:n], moving_coords[:n]
+    sup = Superimposer()
+    sup.set_atoms([_make_atom(c) for c in fixed_coords], [_make_atom(c) for c in moving_coords])
+    R, t = sup.rotran
+    aligned = np.dot(moving_coords, R) + t
+    logging.info(f"Alignment RMSD: {sup.rms:.3f} Ã…")
+    if return_transform:
+        return aligned, sup.rms, (R, t)
+    return aligned, sup.rms
+
+
+# â”€â”€ Pocket analysis helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def compute_pocket_distances(pocket_points, ligand_coords):
+    if ligand_coords.size == 0 or pocket_points.size == 0:
+        logging.warning("Ligand or pocket points missing â€” skipping distance computation.")
+        return {"min": None, "max": None, "avg": None}
+    d = cdist(pocket_points, ligand_coords)
+    return {"min": float(np.min(d)), "max": float(np.max(d)), "avg": float(np.mean(d))}
+
+
+def analyze_top_pockets(result):
+    """Return (top_1based_index, validation_tags_list) from unified 'ligand_validation' field."""
+    validations = result.get("ligand_validation", [])
+    top_index, tags = None, []
+    for idx, valid in enumerate(validations):
+        if valid:
+            tags.append(VALIDATION_METHOD.capitalize())
+            if top_index is None:
+                top_index = idx + 1
+        else:
+            tags.append("None")
+    return top_index, tags
+
+
+# â”€â”€ Core PDB processing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def process_pdb(pdb_path):
+    logging.info(f"=== Processing: {pdb_path} ===")
+    base    = os.path.splitext(os.path.basename(pdb_path))[0]
+    out_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+    os.makedirs(out_dir, exist_ok=True)
+    out_file = os.path.join(out_dir, f"{base}_pockets.json")
+
+    result = {
+        "pdb_path": pdb_path,
+        "triangulation_backend": None,  
+        "ranked_pockets": [], "ranking_scores": [],
+        "ligand_coords": [], "protein_coords": [], "protein_atoms": [],
+        "step_to_ligand": None, "step_to_ligand_mesh": None,
+        "validation_methods": [], "ligand_validation": [],
+        "pocket_volumes": [], "pocket_depths": [],
+        "mouth_area": [], "mouth_perimeter": [],
+        "ligand_to_pocket_distances": [],
+        "ligand_containment_mesh": [], "ligand_mesh_distances": [],
+        "ligand_containment_strict": [],
+    }
+
+    # Cache hit
+    if USE_EXISTING_RESULTS and os.path.exists(out_file):
+        cached = load_json(out_file)
+        if cached:
+            logging.info(f"Using cached result: {out_file}")
+            return cached
+        logging.warning("Cached result invalid â€” recalculating.")
+
+    # Load PDB
+    try:
+        protein_coords, ligand_coords, protein_atoms, ppdb = load_and_separate_pdb(pdb_path)
+        radii = calculate_atomic_radii(ppdb)
+    except Exception as e:
+        logging.error(f"Failed to load {pdb_path}: {e}")
+        return result
+
+    ligand_coords = np.array(ligand_coords) if ligand_coords is not None and len(ligand_coords) > 0 else np.array([])
+    result["ligand_coords"]  = ligand_coords
+    result["protein_coords"] = protein_coords.tolist()
+    result["protein_atoms"]  = protein_atoms
+
+    if np.unique(protein_coords, axis=0).shape[0] < 4:
+        logging.error(f"Too few unique atoms in {pdb_path}. Skipping.")
+        return result
+
+    # Delaunay triangulation
+    logging.info("Running triangulation...")
+    try:
+        if USE_CGAL and WEIGHTED_DELAUNAY:
+            simplices, triangulation_info = cgal_weighted_delaunay(protein_coords, radii)
+            logging.info("Using weighted Delaunay via CGAL/pocketlab.")
+        else:
+            simplices = Delaunay(protein_coords).simplices
+            triangulation_info = None
+            logging.info("Using standard SciPy Delaunay.")
+    except Exception as e:
+        logging.error(f"Triangulation failed for {pdb_path}: {e}")
+        return result
+
+    simplices = np.asarray(simplices, dtype=int)
+    if simplices.ndim != 2 or simplices.shape[1] != 4:
+        logging.error(f"Invalid simplices shape: {simplices.shape}")
+        return result
+
+    result["triangulation_backend"] = (
+        "cgal_weighted_delaunay"
+        if USE_CGAL and WEIGHTED_DELAUNAY
+        else "scipy_delaunay"
+    )
+    logging.info(f"Triangulation backend: {result['triangulation_backend']}")
+
+    tetra_positions = protein_coords[simplices]
+
+    # Alpha shape
+    logging.info("Computing alpha shape...")
+    alpha = get_alpha()
+    logging.info(f"Alpha = {alpha}")
+    alpha_mask, radii, tetra_positions, simplices = compute_alpha_complex_from_tetrahedra(
+        simplices, tetra_positions, alpha, base,
+        protein_coords, FILTER_ALPHA_BY_SASA, SASA_CONTACT_THRESHOLD, pdb_path,
+    )
+
+    # Pocket detection
+    logging.info("Detecting pockets...")
+    pocket_info = detect_pockets(
+        protein_coords, simplices, tetra_positions, alpha_mask,
+        min_volume_threshold=MIN_POCKET_VOLUME,
+        flow_params=FLOW_KWARGS,
+        molecule_name=base,
+        radii=radii,
+    )
+    ranked_pockets      = pocket_info.get("ranked_pockets", [])
+    representative_pts  = pocket_info.get("representative_points", [])
+    ranking_scores      = pocket_info.get("ranking_scores", [])
+    result.update({"ranked_pockets": ranked_pockets, "representative_points": representative_pts, "ranking_scores": ranking_scores})
+
+    # Volumes and depths
+    pocket_volumes, pocket_depths = [], []
+    for idx, pocket in enumerate(ranked_pockets):
+        valid_idx = [t for t in pocket if 0 <= t < len(protein_coords)]
+        if valid_idx:
+            volume = compute_analytic_pocket_volume(tetra_positions, valid_idx)
+            depth  = float(np.max([np.linalg.norm(protein_coords[t] - protein_coords[valid_idx[0]]) for t in valid_idx]))
+            logging.info(f"Pocket {idx+1}: volume={volume:.2f}, depth={depth:.2f}")
+        else:
+            volume, depth = 0.0, 0.0
+            logging.warning(f"Pocket {idx+1}: no valid tetrahedra.")
+        pocket_volumes.append(volume)
+        pocket_depths.append(depth)
+    result["pocket_volumes"] = pocket_volumes
+    result["pocket_depths"]  = pocket_depths
+
+    # Mouth parameters
+    mouth_params = compute_mouth_parameters(ranked_pockets, simplices, protein_coords, ligand_coords)
+    result["mouth_area"]      = [m.get("mouth_area", 0)         for m in mouth_params]
+    result["mouth_perimeter"] = [m.get("mouth_circumference", 0) for m in mouth_params]
+
+    # Validation
+    validation_methods      = []
+    ligand_containment_mesh = []
+    ligand_mesh_distances   = []
+    ligand_validation       = []
+    method = VALIDATION_METHOD.lower()
+
+    if method == "mesh_extrusion":
+        for i, mouth in enumerate(mouth_params):
+            rim_atoms   = mouth.get("rim_atoms", [])
+            mouth_coords = np.array(protein_coords)[rim_atoms] if rim_atoms else np.array([])
+            in_contact, mesh, min_dist = validate_ligand_in_extruded_mesh(
+                mouth_coords, ligand_coords, extrusion_distance=MESH_EXTRUSION_DISTANCE
+            )
+            validation_methods.append("Mesh" if in_contact else "None")
+            ligand_containment_mesh.append(in_contact)
+            ligand_mesh_distances.append(min_dist)
+            ligand_validation.append(in_contact)
+            if SAVE_EXTRUDED_MESHES and mesh:
+                mesh_dir = os.path.join(OUTPUT_DIR, VERSION_TAG, "extruded_meshes", base)
+                os.makedirs(mesh_dir, exist_ok=True)
+                mesh.export(os.path.join(mesh_dir, f"{base}_pocket_{i+1}.ply"))
+
+    elif method == "sasa":
+        sasa_before = compute_sasa(pdb_path, SASA_METHOD)
+        sasa_after  = compute_sasa(pdb_path, SASA_METHOD, remove_ligand=True)
+        tree = KDTree(protein_coords)
+        for pocket in ranked_pockets:
+            tetra_pts     = np.concatenate([tetra_positions[i] for i in pocket], axis=0)
+            _, atom_idx   = tree.query(tetra_pts, k=1)
+            valid = evaluate_sasa_contact(
+                list(set(atom_idx)), sasa_before, sasa_after,
+                ligand_coords, protein_coords, SASA_CONTACT_THRESHOLD,
+            )
+            validation_methods.append("SASA" if valid else "None")
+            ligand_validation.append(valid)
+
+    elif method == "fake_ball":
+        for mouth in mouth_params:
+            rim_atoms    = mouth.get("rim_atoms", [])
+            mouth_coords = np.array(protein_coords)[rim_atoms] if rim_atoms else np.array([])
+            valid = validate_ligand_in_fake_sphere(mouth_coords, ligand_coords, FAKE_SPHERE_RADIUS)
+            validation_methods.append("FakeBall" if valid else "None")
+            ligand_validation.append(valid)
+
+    else:
+        validation_methods = ["None"] * len(ranked_pockets)
+        ligand_validation  = [False]  * len(ranked_pockets)
+
+    result["validation_methods"]      = validation_methods
+    result["ligand_validation"]        = ligand_validation
+    result["ligand_containment_mesh"]  = ligand_containment_mesh
+    result["ligand_mesh_distances"]    = ligand_mesh_distances
+    result["step_to_ligand"]           = next((i + 1 for i, m in enumerate(validation_methods) if m != "None"), None)
+    result["step_to_ligand_mesh"]      = result["step_to_ligand"] if method == "mesh_extrusion" else None
+
+    # Save pocket PDBs
+    protein_df     = ppdb.df["ATOM"]
+    output_pdb_dir = os.path.join(OUTPUT_DIR, VERSION_TAG, "pocket_pdbs", base)
+    os.makedirs(output_pdb_dir, exist_ok=True)
+    tree = KDTree(protein_coords)
+    for rank, pocket in enumerate(ranked_pockets[:NUM_POCKETS_TO_SAVE], 1):
+        pocket_atoms = np.unique(np.concatenate([tetra_positions[i] for i in pocket]), axis=0)
+        _, idx       = tree.query(pocket_atoms, k=1)
+        from biopandas.pdb import PandasPdb
+        pocket_df           = protein_df.iloc[idx].copy()
+        pocket_df["b_factor"] = rank
+        pdb_out             = PandasPdb()
+        pdb_out.df["ATOM"]  = pocket_df
+        pdb_out.to_pdb(os.path.join(output_pdb_dir, f"{base}_ranked_{rank}.pdb"))
+        logging.info(f"Pocket {rank} saved.")
+
+    save_pocket_properties(result, base, OUTPUT_DIR)
+    logging.info(f"=== Done: {pdb_path} | pockets={len(ranked_pockets)}, top={result['step_to_ligand']} ===")
+    return convert_numpy_types(result)
+
+
+# â”€â”€ Analysis modes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def run_analysis_mode(pdb_sources, analysis_type="single", correspondence_df=None):
+    results = []
+    out_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+    os.makedirs(out_dir, exist_ok=True)
+
+    if analysis_type == "paired" and correspondence_df is not None:
+        for _, row in correspondence_df.iterrows():
+            b_name = row["bounded"]
+            u_name = row["unbounded"]
+            b_path = os.path.join(BOUNDED_DIR,   f"{b_name}.pdb")
+            u_path = os.path.join(UNBOUNDED_DIR,  f"{u_name}.pdb")
+            if not os.path.exists(b_path) or not os.path.exists(u_path):
+                logging.warning(f"Skipping pair {b_name}/{u_name}: missing file(s).")
+                continue
+            b_res = process_pdb(b_path)
+            if not b_res or not b_res.get("ranked_pockets"):
+                logging.warning(f"Skipping {b_name}: no pockets.")
+                continue
+            u_res = process_pdb(u_path)
+            if not u_res or not u_res.get("ranked_pockets"):
+                logging.warning(f"Skipping {u_name}: no pockets.")
+                continue
+
+            ALIGN_ATOMS = ["CA"]
+            fixed_c, moving_c = match_atoms_by_residue_and_name(
+                b_res["protein_atoms"], u_res["protein_atoms"], allowed_atom_names=ALIGN_ATOMS
+            )
+            _, rmsd, (R, t) = align_using_superimposer(fixed_c, moving_c, return_transform=True)
+            u_res["protein_coords"] = (np.dot(np.array(u_res["protein_coords"]), R) + t).tolist()
+            logging.info(f"Pair {b_name}/{u_name} RMSD={rmsd:.3f} Ã…")
+
+            b_rank, _ = analyze_top_pockets(b_res)
+            u_rank, _ = analyze_top_pockets(u_res)
+            results.append({
+                "bounded_file":          b_name,
+                "unbounded_file":        u_name,
+                "bounded_pocket_rank":   b_rank,
+                "unbounded_pocket_rank": u_rank,
+                "is_top1_bounded":       b_rank == 1 if b_rank else False,
+                "is_top3_bounded":       b_rank is not None and b_rank <= 3,
+                "is_top5_bounded":       b_rank is not None and b_rank <= 5,
+                "is_top1_unbounded":     u_rank == 1 if u_rank else False,
+                "is_top3_unbounded":     u_rank is not None and u_rank <= 3,
+                "is_top5_unbounded":     u_rank is not None and u_rank <= 5,
+                "alignment_rmsd":        rmsd,
+                "step_to_ligand":        b_res.get("step_to_ligand"),
+                "step_to_ligand_mesh":   b_res.get("step_to_ligand_mesh"),
+                "ligand_to_pocket_distances": b_res.get("ligand_to_pocket_distances", []),
+                "ligand_mesh_distances":      b_res.get("ligand_mesh_distances", []),
+                "ligand_containment_mesh":    b_res.get("ligand_containment_mesh", []),
+                "ligand_containment_strict":  b_res.get("ligand_containment_strict", []),
+                "pocket_volumes":   b_res.get("pocket_volumes", []),
+                "pocket_depths":    b_res.get("pocket_depths", []),
+                "mouth_area":       b_res.get("mouth_area", []),
+                "mouth_perimeter":  b_res.get("mouth_perimeter", []),
+                "ligand_coords":    b_res.get("ligand_coords", []),
+            })
+            save_json(b_res, os.path.join(out_dir, f"bounded_{b_name}.json"))
+            save_json(u_res, os.path.join(out_dir, f"unbounded_{u_name}.json"))
+
+    else:
+        for pdb_file in pdb_sources:
+            logging.info(f"Processing {pdb_file}")
+            result = process_pdb(pdb_file)
+            if not result or not result.get("ranked_pockets"):
+                logging.warning(f"Skipping {pdb_file}: no pockets.")
+                continue
+            pdb_name  = os.path.splitext(os.path.basename(pdb_file))[0]
+            save_json(result, os.path.join(out_dir, f"{pdb_name}_pockets.json"))
+            rank_sasa = result.get("step_to_ligand")
+            rank_mesh = result.get("step_to_ligand_mesh")
+            chosen    = rank_mesh if VALIDATION_METHOD == "mesh_extrusion" else rank_sasa
+            results.append({
+                "pdb_path":    pdb_file,
+                "file":        os.path.basename(pdb_file),
+                "pocket_rank": chosen,
+                "step_to_ligand":      rank_sasa,
+                "step_to_ligand_mesh": rank_mesh,
+                "is_top1": chosen == 1 if isinstance(chosen, int) else False,
+                "is_top3": chosen <= 3  if isinstance(chosen, int) else False,
+                "is_top5": chosen <= 5  if isinstance(chosen, int) else False,
+                "pocket_volumes":  result.get("pocket_volumes", []),
+                "pocket_depths":   result.get("pocket_depths", []),
+                "mouth_areas":     result.get("mouth_area", []),
+                "mouth_perimeters":result.get("mouth_perimeter", []),
+                "ligand_coords":   result.get("ligand_coords", []),
+                "ligand_to_pocket_distances": result.get("ligand_to_pocket_distances", []),
+                "num_pockets": len(result.get("ranked_pockets", [])),
+            })
+    return results
+
+
+# â”€â”€ Entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def main():
+    logging.info(f"=== PyCASTA analysis start | version={VERSION_TAG} ===")
+    out_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+    os.makedirs(out_dir, exist_ok=True)
+
+    bounded_files = glob.glob(os.path.join(BOUNDED_DIR, "*.pdb"))
+    if not bounded_files:
+        logging.error("No PDB files found in BOUNDED_DIR.")
+        sys.exit(1)
+
+        if UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and CORRESPONDENCE_FILE and os.path.exists(CORRESPONDENCE_FILE):
+        logging.info("Mode: paired")
+        results = run_analysis_mode(
+            pdb_sources=bounded_files, analysis_type="paired",
+            correspondence_df=pd.read_excel(CORRESPONDENCE_FILE),
+        )
+        save_summary_json(
+            results,
+            os.path.join(out_dir, "paired_summary.json"),
+            analysis_type="paired",
+        )
+        save_summary_csv(
+            results,
+            os.path.join(out_dir, "paired_summary.csv"),
+        )
+
+    elif not UNBOUNDED_DIR or not os.path.exists(UNBOUNDED_DIR):
+        logging.info("Mode: single (bounded)")
+        results = run_analysis_mode(pdb_sources=bounded_files, analysis_type="single")
+        save_summary_json(
+            results,
+            os.path.join(out_dir, "single_summary.json"),
+            analysis_type="single",
+        )
+        save_summary_csv(
+            results,
+            os.path.join(out_dir, "single_summary.csv"),
+        )
+
+    elif UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and not CORRESPONDENCE_FILE:
+        logging.info("Mode: unbounded")
+        unbounded_files = glob.glob(os.path.join(UNBOUNDED_DIR, "*.pdb"))
+        if not unbounded_files:
+            logging.error("No PDB files found in UNBOUNDED_DIR.")
+            sys.exit(1)
+        results = run_analysis_mode(pdb_sources=unbounded_files, analysis_type="unbounded")
+        save_summary_json(
+            results,
+            os.path.join(out_dir, "unbounded_summary.json"),
+            analysis_type="unbounded",
+        )
+        save_summary_csv(
+            results,
+            os.path.join(out_dir, "unbounded_summary.csv"),
+        )
+
+    else:
+        logging.error("Invalid configuration: check UNBOUNDED_DIR and CORRESPONDENCE_FILE.")
+        sys.exit(1)
+     
+    logging.info(f"=== Analysis complete. Results in: {out_dir} ===")
+
+
+if __name__ == "__main__":
+    main()
+
+
+### FILE: C:\github\pycasta\src\pycasta\run_entrypoint.py
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 31 21:13:13 2025
+
+@author: giorgio
+"""
+
+# run_entrypoint.py
+
+# Patch to make run_analysis callable as a function with minimal changes
+
+import os
+import glob
+import pandas as pd
+
+from run_analysis import run_analysis_mode, summarize_and_print_results
+from config import (
+    OUTPUT_DIR,
+    VERSION_TAG,
+    CORRESPONDENCE_FILE,
+    UNBOUNDED_DIR,
+    BOUNDED_DIR,
+)
+
+
+def run_all_analysis():
+    """
+    Runs the full analysis and returns the result summary (dict) without writing to file unless needed.
+    Can be reused in batch optimization or notebooks.
+    """
+    versioned_output_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+    os.makedirs(versioned_output_dir, exist_ok=True)
+
+    bounded_files = glob.glob(os.path.join(BOUNDED_DIR, "*.pdb"))
+    if not bounded_files:
+        raise FileNotFoundError("No PDB files found in BOUNDED_DIR.")
+
+    # Paired mode
+    if (
+        UNBOUNDED_DIR
+        and os.path.exists(UNBOUNDED_DIR)
+        and CORRESPONDENCE_FILE
+        and os.path.exists(CORRESPONDENCE_FILE)
+    ):
+        correspondence_df = pd.read_excel(CORRESPONDENCE_FILE)
+        paired_results = run_analysis_mode(
+            pdb_sources=bounded_files,
+            analysis_type="paired",
+            correspondence_df=correspondence_df,
+        )
+        summary = summarize_and_print_results(
+            paired_results,
+            analysis_type="paired",
+            output_file=None,
+            csv_output_file=None,
+        )
+        return summary
+
+    # Single (bounded) mode
+    elif not UNBOUNDED_DIR or not os.path.exists(UNBOUNDED_DIR):
+        results = run_analysis_mode(pdb_sources=bounded_files, analysis_type="single")
+        summary = summarize_and_print_results(
+            results, analysis_type="single", output_file=None, csv_output_file=None
+        )
+        return summary
+
+    # Unbounded mode
+    elif UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and not CORRESPONDENCE_FILE:
+        unbounded_files = glob.glob(os.path.join(UNBOUNDED_DIR, "*.pdb"))
+        if not unbounded_files:
+            raise FileNotFoundError("No PDB files found in UNBOUNDED_DIR.")
+        results = run_analysis_mode(
+            pdb_sources=unbounded_files, analysis_type="unbounded"
+        )
+        summary = summarize_and_print_results(
+            results, analysis_type="unbounded", output_file=None, csv_output_file=None
+        )
+        return summary
+
+    else:
+        raise ValueError(
+            "Invalid configuration: check UNBOUNDED_DIR and CORRESPONDENCE_FILE settings."
+        )
+
+
+### FILE: C:\github\pycasta\src\pycasta\run_test_full.py
+from run_analysis import main
+
+main()
+
+
+### FILE: C:\github\pycasta\src\pycasta\run_test_one.py
+
+import sys
+sys.path.insert(0, r"C:\github\pocketlab\src")
+sys.path.insert(0, r"C:\github\pycasta\src\pycasta")
+
+from run_analysis import process_pdb
+
+result = process_pdb(r"C:\github\pycasta\data\coach420\pdbs\1a26A.pdb")
+print(result["step_to_ligand"])
+print(result["triangulation_backend"] if "triangulation_backend" in result else "no backend field")
+
+
+### FILE: C:\github\pycasta\src\pycasta\run_test_small.py
+from pathlib import Path
+from run_analysis import process_pdb
+
+pdb_dir = Path(r"C:\github\pycasta\data\coach420\pdbs")
+pdbs = sorted(pdb_dir.glob("*.pdb"))[:3]
+
+for pdb in pdbs:
+    print(f"\n=== {pdb.name} ===")
+    result = process_pdb(str(pdb))
+    print("step_to_ligand:", result.get("step_to_ligand"))
+    print("backend:", result.get("triangulation_backend", "no backend field"))
+    print("num_pockets:", len(result.get("ranked_pockets", [])))
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\__init__.py
+# Automatically added to make this a package
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\common.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+common.py
+
+A simple module to export Fore and Style from colorama.
+"""
+
+from colorama import Fore, Style
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\data_utils.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+data_utils.py
+
+Module for saving and exporting results (JSON, CSV) and converting NumPy types.
+"""
+
+import os
+import json
+import logging
+import numpy as np
+import csv
+from config import VALIDATION_METHOD
+
+
+def np_converter(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (np.integer, np.floating)):
+        return obj.item()
+    elif isinstance(obj, list):
+        return [np_converter(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: np_converter(value) for key, value in obj.items()}
+    return obj
+
+
+def convert_numpy_types(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, (np.bool_,)):
+        return bool(obj)
+    elif isinstance(obj, tuple):
+        return [convert_numpy_types(x) for x in obj]
+    elif isinstance(obj, set):
+        return [convert_numpy_types(x) for x in obj]
+    elif isinstance(obj, list):
+        return [convert_numpy_types(x) for x in obj]
+    elif isinstance(obj, dict):
+        new_dict = {}
+        for k, v in obj.items():
+            # Ensure keys are acceptable
+            if not isinstance(k, (str, int, float, bool)) and k is not None:
+                k = str(k)
+            new_dict[k] = convert_numpy_types(v)
+        return new_dict
+    return obj
+
+
+def save_json(data, filename):
+    with open(filename, "w") as f:
+        json.dump(convert_numpy_types(data), f, indent=4)
+
+
+def load_json(in_path):
+    if not os.path.exists(in_path):
+        logging.warning(f"JSON file not found: {in_path}")
+        return {}
+    with open(in_path, "r") as f:
+        content = f.read().strip()
+        if not content:
+            return {}
+        try:
+            return json.loads(content)
+        except json.decoder.JSONDecodeError as e:
+            logging.warning(f"JSON decode error in {in_path}: {e}")
+            return {}
+
+
+
+
+def save_pocket_results_csv(result, pdb_id, output_dir="results"):
+    output_csv = os.path.join(output_dir, f"{pdb_id}_pockets.csv")
+    os.makedirs(output_dir, exist_ok=True)
+
+    headers = [
+        "pocket_id",
+        "volume",
+        "depth",
+        "mouth_area",
+        "mouth_circumference",
+        "ligand_mouth_distance",
+        "ligand_in_mesh",
+    ]
+
+    rows = []
+    num_pockets = len(result.get("volumes", []))
+    for i in range(num_pockets):
+        rows.append(
+            {
+                "pocket_id": i + 1,
+                "volume": result.get("volumes", [None])[i],
+                "depth": result.get("depths", [None])[i],
+                "mouth_area": result.get("mouth_area", [None])[i],
+                "mouth_circumference": result.get("mouth_perimeter", [None])[i],
+                "ligand_mouth_distance": result.get(
+                    "ligand_mouth_min_distance", [None]
+                )[i],
+                "ligand_in_mesh": result.get("ligand_containment_mesh", [None])[i],
+            }
+        )
+
+    with open(output_csv, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"âœ… Pocket results saved to {output_csv}")
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\geometry_utils.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+geometry_utils.py
+
+Module containing functions for:
+- Computing circumsphere radii of tetrahedra.
+- Estimating pocket volume using Monte Carlo integration.
+- Validating pockets via mesh extrusion and fake sphere tests.
+"""
+
+import os
+import numpy as np
+from scipy.spatial import Delaunay, ConvexHull
+from scipy.spatial.distance import cdist
+from sklearn.decomposition import PCA
+import trimesh
+from config import (
+    SAVE_EXTRUDED_MESHES,
+    OUTPUT_DIR,
+    MESH_EXTRUSION_DISTANCE,
+    LIGAND_THRESHOLD,
+)
+
+
+def get_unique_vertices(tetra_positions, pocket_indices):
+    vertices = []
+    for idx in pocket_indices:
+        vertices.extend(tetra_positions[idx])
+    vertices = np.array(vertices)
+    return np.unique(vertices, axis=0)
+
+
+def get_convex_hull_points(points):
+    if len(points) < 4:
+        return points
+    hull = ConvexHull(points)
+    return points[hull.vertices]
+
+
+def validate_ligand_in_extruded_mesh(
+    mouth_coords, ligand_coords, extrusion_distance=MESH_EXTRUSION_DISTANCE
+):
+    if len(mouth_coords) < 3 or ligand_coords.size == 0:
+        return False, None, None
+
+    from sklearn.decomposition import PCA
+    from scipy.spatial import ConvexHull
+    import logging
+    import trimesh
+
+    try:
+        # Flatten the mouth coordinates using PCA
+        pca = PCA(n_components=2)
+        flat_2d = pca.fit_transform(mouth_coords)
+
+        # Create 2D convex hull of the flattened points
+        hull_2d = ConvexHull(flat_2d)
+        ordered_indices = hull_2d.vertices
+        cap_3d = mouth_coords[ordered_indices]
+
+        # Compute extrusion normal
+        normal_3d = np.cross(cap_3d[1] - cap_3d[0], cap_3d[2] - cap_3d[0])
+        if np.linalg.norm(normal_3d) == 0:
+            return False, None, None
+        normal_3d /= np.linalg.norm(normal_3d)
+
+        # Extrude cap
+        extruded = cap_3d + extrusion_distance * normal_3d
+        all_vertices = np.vstack([cap_3d, extruded])
+        num = len(cap_3d)
+
+        # Construct mesh faces
+        faces = []
+        for i in range(1, num - 1):
+            faces.append([0, i, i + 1])
+        for i in range(1, num - 1):
+            faces.append([num, num + i + 1, num + i])
+        for i in range(num):
+            j = (i + 1) % num
+            faces.append([i, j, j + num])
+            faces.append([i, j + num, i + num])
+
+        # Build the mesh
+        mesh = trimesh.Trimesh(vertices=all_vertices, faces=faces, process=True)
+
+        # Check if ligand atoms are inside the mesh
+        inside_mask = mesh.contains(ligand_coords)
+        inside = np.any(inside_mask)
+
+        # Compute signed distances
+        signed_distances = mesh.nearest.signed_distance(ligand_coords)
+        min_distance = float(np.min(np.abs(signed_distances)))
+
+        # Key fix: treat as valid contact if inside OR very close
+        in_contact = inside or min_distance <= LIGAND_THRESHOLD
+
+        return in_contact, mesh, min_distance
+
+    except Exception as e:
+        logging.warning(f"âš ï¸ Failed to validate ligand in extruded mesh: {e}")
+        return False, None, None
+
+
+def validate_ligand_in_fake_sphere(mouth_coords, ligand_coords, radius=1.4):
+    if len(mouth_coords) == 0 or ligand_coords.size == 0:
+        return False
+    mouth_center = np.mean(mouth_coords, axis=0)
+    distances = np.linalg.norm(ligand_coords - mouth_center, axis=1)
+    print(f"âœ… Ligand atoms: {ligand_coords.shape[0]}")
+    print(f"âœ… Mouth center coordinates: {mouth_center}")
+    print(f"âœ… Minimum ligand-mouth distance: {np.min(distances):.2f} Ã…")
+    return np.any(distances <= radius)
+
+
+def compute_circumsphere_radius(tetra):
+    if tetra.shape[0] != 4:
+        return np.inf
+    A, B, C, D = tetra
+    AB, AC, AD = B - A, C - A, D - A
+    M = np.vstack([AB, AC, AD]).T
+    try:
+        rhs = 0.5 * np.array([np.dot(AB, AB), np.dot(AC, AC), np.dot(AD, AD)])
+        sol = np.linalg.solve(M, rhs)
+        radius = np.linalg.norm(sol)
+    except np.linalg.LinAlgError:
+        radius = np.inf
+    return radius
+
+
+def log_radii_statistics(radii):
+    stats = {
+        "min": float(np.min(radii)),
+        "max": float(np.max(radii)),
+        "mean": float(np.mean(radii)),
+    }
+    import logging
+
+    logging.info(f"Circumsphere radii stats: {stats}")
+    return stats
+
+
+def compute_all_circumsphere_radii(tetra_positions):
+    radii = np.array([compute_circumsphere_radius(tetra) for tetra in tetra_positions])
+    log_radii_statistics(radii)
+    return radii
+
+
+def monte_carlo_pocket_volume(tetra_positions, pocket_indices, num_samples=10000):
+    pocket_tetra = tetra_positions[pocket_indices]
+    all_points = pocket_tetra.reshape(-1, 3)
+    min_bounds = np.min(all_points, axis=0)
+    max_bounds = np.max(all_points, axis=0)
+    bbox_volume = np.prod(max_bounds - min_bounds)
+    random_points = np.random.uniform(
+        low=min_bounds, high=max_bounds, size=(num_samples, 3)
+    )
+    count_inside = 0
+    for p in random_points:
+        if any(point_in_tetrahedron(p, tetra) for tetra in pocket_tetra):
+            count_inside += 1
+    return (count_inside / num_samples) * bbox_volume
+
+
+def monte_carlo_ligand_volume(ligand_coords, num_samples=10000):
+    if ligand_coords.shape[0] < 4:
+        return 0.0
+    min_bounds = np.min(ligand_coords, axis=0)
+    max_bounds = np.max(ligand_coords, axis=0)
+    bbox_volume = np.prod(max_bounds - min_bounds)
+    delaunay = Delaunay(ligand_coords)
+    random_points = np.random.uniform(
+        low=min_bounds, high=max_bounds, size=(num_samples, 3)
+    )
+    inside = delaunay.find_simplex(random_points) >= 0
+    return float(np.sum(inside)) / num_samples * bbox_volume
+
+
+def point_in_tetrahedron(p, tetra):
+    A, B, C, D = tetra
+    M = np.column_stack([B - A, C - A, D - A])
+    try:
+        u, v, w = np.linalg.solve(M, p - A)
+        return (u >= 0) and (v >= 0) and (w >= 0) and (u + v + w <= 1)
+    except np.linalg.LinAlgError:
+        return False
+
+
+def compute_triangle_area(triangle):
+    a, b, c = triangle
+    return 0.5 * np.linalg.norm(np.cross(b - a, c - a))
+
+
+def compute_triangle_perimeter(triangle):
+    a, b, c = triangle
+    return np.linalg.norm(a - b) + np.linalg.norm(b - c) + np.linalg.norm(c - a)
+
+
+def compute_circumcenter(tetra):
+    A, B, C, D = tetra
+    M = np.vstack([B - A, C - A, D - A]).T
+    rhs = 0.5 * np.array(
+        [np.dot(B - A, B - A), np.dot(C - A, C - A), np.dot(D - A, D - A)]
+    )
+    try:
+        sol = np.linalg.solve(M, rhs)
+        circumcenter = A + sol
+    except np.linalg.LinAlgError:
+        circumcenter = np.array([np.nan, np.nan, np.nan])
+    return circumcenter
+
+
+def compute_volume_for_tetra_group(tetra_positions, tetra_indices):
+    total_volume = 0.0
+    for idx in tetra_indices:
+        verts = tetra_positions[idx]
+        a, b, c, d = verts
+        vol = np.abs(np.dot(a - d, np.cross(b - d, c - d))) / 6.0
+        total_volume += vol
+    return total_volume
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\pocket_utils.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+pocket_utils.py
+
+Module containing utility functions for pockets:
+- Compute distances and mouth parameters.
+- Merge nearby pocket clusters.
+- Ranking functions and saving pocket properties.
+"""
+
+import numpy as np
+from scipy.spatial.distance import cdist
+import logging
+from config import (
+    SIMPLE_SPLIT,
+    ATOM_SPLITTING,
+    ATOM_SPLITTING_MODE,
+    SAVE_ALPHA,
+    VERSION_TAG,
+    OUTPUT_DIR,
+    LIGAND_THRESHOLD,
+    BETA_RANKING,
+    ALPHA_RANKING,
+)
+import os
+import pandas as pd
+
+
+def compute_ligand_contact_distance(
+    protein_coords, ligand_coords, threshold=LIGAND_THRESHOLD
+):
+    if protein_coords.size == 0 or ligand_coords.size == 0:
+        return {}
+    distances = cdist(protein_coords, ligand_coords)
+    contacting = {}
+    for i in range(protein_coords.shape[0]):
+        min_dist = distances[i].min()
+        if min_dist < threshold:
+            contacting[i] = min_dist
+    return contacting
+
+
+def compute_mouth_parameters(
+    ranked_pockets, simplices, protein_coords, ligand_coords=None
+):
+    ligand_center = None
+    if ligand_coords is not None and len(ligand_coords) > 0:
+        ligand_center = np.mean(ligand_coords, axis=0)
+    mouth_params_list = []
+    for pocket in ranked_pockets:
+        face_count = {}
+        for tetra_idx in pocket:
+            atoms = simplices[tetra_idx]
+            faces = [
+                tuple(sorted((atoms[0], atoms[1], atoms[2]))),
+                tuple(sorted((atoms[0], atoms[1], atoms[3]))),
+                tuple(sorted((atoms[0], atoms[2], atoms[3]))),
+                tuple(sorted((atoms[1], atoms[2], atoms[3]))),
+            ]
+            for face in faces:
+                face_count[face] = face_count.get(face, 0) + 1
+        boundary_faces = [face for face, count in face_count.items() if count == 1]
+        total_area, total_circumference, rim_atoms = 0, 0, set()
+        face_centroids = []
+        from utils.geometry_utils import compute_triangle_area
+
+        for face in boundary_faces:
+            pts = protein_coords[list(face)]
+            area = compute_triangle_area(pts)
+            total_area += area
+            centroid = np.mean(pts, axis=0)
+            face_centroids.append(centroid)
+            edges = [(face[i], face[j]) for i, j in [(0, 1), (1, 2), (2, 0)]]
+            total_circumference += sum(
+                np.linalg.norm(protein_coords[e[0]] - protein_coords[e[1]])
+                for e in edges
+            )
+            rim_atoms.update(face)
+        mouth_center = (
+            np.mean(face_centroids, axis=0) if face_centroids else np.zeros(3)
+        )
+        if ligand_coords is not None and len(ligand_coords) > 0:
+            dists = np.linalg.norm(ligand_coords - mouth_center[None, :], axis=-1)
+            ligand_distance = float(np.min(dists))
+        else:
+            ligand_distance = None
+        mouth_params_list.append(
+            {
+                "mouth_area": round(total_area, 2),
+                "mouth_circumference": round(total_circumference, 2),
+                "rim_atoms": list(rim_atoms),
+                "mouth_center": mouth_center.tolist(),
+                "ligand_distance": (
+                    round(ligand_distance, 2) if ligand_distance is not None else None
+                ),
+            }
+        )
+    return mouth_params_list
+
+
+def compute_ranking_scores(
+    pocket_volumes, pockets, alpha_ranking=ALPHA_RANKING, beta_ranking=BETA_RANKING
+):
+    ranking_scores = []
+    for volume, pocket in zip(pocket_volumes, pockets):
+        rank_score = volume + 0.1 * len(pocket)
+        ranking_scores.append(rank_score)
+    return ranking_scores
+
+
+def merge_nearby_clusters(pockets, tetra_positions, threshold):
+    if not pockets:
+        return []
+    clusters = list(pockets)
+    changed = True
+    while changed:
+        changed = False
+        new_clusters = []
+        merged_flags = [False] * len(clusters)
+        for i in range(len(clusters)):
+            if merged_flags[i]:
+                continue
+            cluster_i = clusters[i]
+            if not cluster_i:
+                continue
+            tetra_coords_i = np.concatenate(
+                [tetra_positions[idx] for idx in cluster_i], axis=0
+            )
+            centroid_i = np.mean(tetra_coords_i, axis=0)
+            for j in range(i + 1, len(clusters)):
+                if merged_flags[j]:
+                    continue
+                cluster_j = clusters[j]
+                if not cluster_j:
+                    continue
+                tetra_coords_j = np.concatenate(
+                    [tetra_positions[idx] for idx in cluster_j], axis=0
+                )
+                centroid_j = np.mean(tetra_coords_j, axis=0)
+                if np.linalg.norm(centroid_i - centroid_j) < threshold:
+                    cluster_i = list(set(cluster_i) | set(cluster_j))
+                    merged_flags[j] = True
+                    changed = True
+                    tetra_coords_i = np.concatenate(
+                        [tetra_positions[idx] for idx in cluster_i], axis=0
+                    )
+                    centroid_i = np.mean(tetra_coords_i, axis=0)
+            new_clusters.append(cluster_i)
+        clusters = new_clusters
+    return clusters
+
+
+def save_pocket_properties(result: dict, pdb_id: str, output_dir: str):
+
+    n = len(result.get("volumes", []))
+    data = []
+    for i in range(n):
+        data.append(
+            {
+                "pocket_index": i + 1,
+                "volume": result.get("volumes", [None])[i],
+                "depth": result.get("depths", [None])[i],
+                "mouth_area": result.get("mouth_area", [None])[i],
+                "mouth_perimeter": result.get("mouth_perimeter", [None])[i],
+                "min_ligand_mouth_dist": result.get(
+                    "ligand_mouth_min_distance", [None]
+                )[i],
+                "ligand_inside_mesh": result.get("ligand_containment_mesh", [None])[i],
+            }
+        )
+
+    df = pd.DataFrame(data)
+    # Updated output directory to include VERSION_TAG:
+    outdir = os.path.join(output_dir, VERSION_TAG, "pocket_properties")
+    os.makedirs(outdir, exist_ok=True)
+    df.to_csv(os.path.join(outdir, f"{pdb_id}_pocket_properties.csv"), index=False)
+
+
+def compute_volume_for_tetra_group(tetra_positions, group_indices):
+    total_volume = 0.0
+    for idx in group_indices:
+        tetra = tetra_positions[idx]
+        a, b, c, d = tetra[0], tetra[1], tetra[2], tetra[3]
+        vol = np.abs(np.dot(np.cross(b - a, c - a), d - a)) / 6.0
+        total_volume += vol
+    return total_volume
+
+
+def apply_splitting_to_shared_atoms(pockets, protein_coords, atom_radii):
+    if not ATOM_SPLITTING:
+        return pockets
+    for i in range(len(pockets)):
+        for j in range(i + 1, len(pockets)):
+            pocket_i = set(pockets[i])
+            pocket_j = set(pockets[j])
+            common_atoms = pocket_i.intersection(pocket_j)
+            if common_atoms:
+                pocket_center1 = np.mean(protein_coords[list(pocket_i)], axis=0)
+                pocket_center2 = np.mean(protein_coords[list(pocket_j)], axis=0)
+                for atom in common_atoms:
+                    atom_coord = protein_coords[atom]
+                    atom_radius = atom_radii[atom] if atom_radii is not None else 1.0
+                    if ATOM_SPLITTING_MODE.upper() == "CAST":
+                        frac1, frac2 = split_atom_contribution(
+                            atom_coord, atom_radius, pocket_center1, pocket_center2
+                        )
+                    else:
+                        frac1, frac2 = 0.5, 0.5
+                    logging.info(
+                        f"Atom {atom} shared between pockets {i} and {j}: split fractions {frac1:.2f}, {frac2:.2f}"
+                    )
+    return pockets
+
+
+def split_atom_contribution(atom_coord, atom_radius, pocket_center1, pocket_center2):
+    midpoint = (pocket_center1 + pocket_center2) / 2
+    plane_normal = pocket_center2 - pocket_center1
+    norm = np.linalg.norm(plane_normal)
+    if norm == 0:
+        return (0.5, 0.5)
+    plane_normal = plane_normal / norm
+    d = np.abs(np.dot(atom_coord - midpoint, plane_normal))
+    frac = compute_spherical_cap_fraction(atom_radius, d)
+    signed_d = np.dot(atom_coord - midpoint, plane_normal)
+    if signed_d >= 0:
+        return (1 - frac, frac)
+    else:
+        return (frac, 1 - frac)
+
+
+def compute_spherical_cap_fraction(R, d):
+    if d >= R:
+        return 0
+    V_cap = (np.pi * (R - d) ** 2 * (2 * R + d)) / 3.0
+    V_sphere = (4 / 3) * np.pi * R**3
+    return V_cap / V_sphere
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\preprocessing_utils.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+preprocessing_utils.py
+
+Module for loading and preprocessing PDB files:
+- Separating protein and ligand coordinates.
+- Calculating atomic radii.
+- Extracting connectivity (using CONECT records or a distance threshold).
+"""
+
+import logging
+import numpy as np
+import pandas as pd
+from biopandas.pdb import PandasPdb
+from config import INCLUDE_WATER, CONNECTIVITY_THRESHOLD
+from atomic_radii import ATOMIC_RADII_DICT, DEFAULT_RADIUS
+from scipy.spatial import KDTree
+
+
+def load_and_separate_pdb(pdb_path, include_water=INCLUDE_WATER):
+    ppdb = PandasPdb().read_pdb(pdb_path)
+
+    # --- Protein coordinates ---
+    protein_df = ppdb.df["ATOM"]
+    protein_coords = protein_df[["x_coord", "y_coord", "z_coord"]].values
+    logging.info(f"Protein coordinates loaded: {protein_coords.shape[0]} atoms.")
+
+    # --- Ligand coordinates ---
+    ligand_df = ppdb.df.get("HETATM")
+    if ligand_df is not None and not ligand_df.empty:
+        col_name = "residue_name" if "residue_name" in ligand_df.columns else "blank_1"
+        if not include_water:
+            ligand_df = ligand_df[ligand_df[col_name] != "HOH"]
+        ligand_coords = (
+            ligand_df[["x_coord", "y_coord", "z_coord"]].values
+            if not ligand_df.empty
+            else np.array([])
+        )
+    else:
+        ligand_coords = np.array([])
+    logging.info(f"Ligand coordinates loaded: {ligand_coords.shape[0]} atoms.")
+
+    # --- Build list of protein atoms with metadata ---
+    protein_atoms = []
+    for _, row in protein_df.iterrows():
+        protein_atoms.append(
+            {
+                "resid": int(row["residue_number"]),
+                "atom_name": row["atom_name"].strip(),
+                "coord": [row["x_coord"], row["y_coord"], row["z_coord"]],
+            }
+        )
+
+    return protein_coords, ligand_coords, protein_atoms, ppdb
+
+
+def calculate_atomic_radii(ppdb):
+    try:
+        protein_df = ppdb.df.get("ATOM")
+        if protein_df is None or protein_df.empty:
+            raise ValueError("No ATOM data available to compute radii.")
+        atom_elements = protein_df["element_symbol"].values
+        radii = np.array(
+            [ATOMIC_RADII_DICT.get(elem, DEFAULT_RADIUS) for elem in atom_elements]
+        )
+        logging.info(f"Calculated atomic radii for {len(protein_df)} atoms.")
+    except Exception as e:
+        logging.error(f"Error calculating atomic radii: {e}")
+        raise
+    return radii
+
+
+def extract_connectivity(ppdb, distance_threshold=CONNECTIVITY_THRESHOLD):
+    connectivity = {}
+    if "CONECT" in ppdb.df and not ppdb.df["CONECT"].empty:
+        logging.info("Using CONECT records to extract connectivity.")
+        conect_df = ppdb.df["CONECT"]
+        for idx, row in conect_df.iterrows():
+            source = int(row[0]) - 1  # 0-based index
+            neighbors = [int(x) - 1 for x in row[1:] if not pd.isna(x)]
+            connectivity[source] = neighbors
+        num_atoms = len(ppdb.df["ATOM"])
+        for i in range(num_atoms):
+            if i not in connectivity:
+                connectivity[i] = []
+    else:
+        logging.info(
+            "No CONECT records found; computing connectivity based on distance threshold."
+        )
+        protein_df = ppdb.df.get("ATOM")
+        if protein_df is None or protein_df.empty:
+            raise ValueError("No ATOM data available to compute connectivity.")
+        coords = protein_df[["x_coord", "y_coord", "z_coord"]].to_numpy()
+        tree = KDTree(coords)
+        num_atoms = coords.shape[0]
+        for i in range(num_atoms):
+            indices = tree.query_ball_point(coords[i], r=distance_threshold)
+            indices = [j for j in indices if j != i]
+            connectivity[i] = indices
+    return connectivity
+
+
+### FILE: C:\github\pycasta\src\pycasta\utils\sasa_utils.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+sasa_utils.py
+
+Module for calculating SASA and evaluating ligand-pocket contact.
+"""
+
+import os
+import logging
+import numpy as np
+from scipy.spatial.distance import cdist
+from config import SASA_METHOD, USE_PYMOL2, SASA_CONTACT_THRESHOLD
+
+try:
+    import pymol
+
+    pymol.finish_launching(["-qc"])
+    PYMOL_AVAILABLE = True
+except ImportError:
+    PYMOL_AVAILABLE = False
+    logging.warning("PyMOL not found. SASA will not be computed using PyMOL.")
+
+try:
+    import pymol2
+
+    PYMOL2_AVAILABLE = True
+except ImportError:
+    PYMOL2_AVAILABLE = False
+    logging.warning("pymol2 not found.")
+
+try:
+    import freesasa
+
+    RDKit_AVAILABLE = True
+except ImportError:
+    RDKit_AVAILABLE = False
+    logging.warning("FreeSASA not found.")
+
+
+def compute_sasa(pdb_path, method=None, remove_ligand=False):
+    if method is None:
+        method = SASA_METHOD
+    if method.lower() == "pymol2":
+        return compute_sasa_pymol2(pdb_path, remove_ligand=remove_ligand)
+    else:
+        return compute_sasa_pymol(pdb_path, remove_ligand=remove_ligand)
+
+
+def compute_sasa_pymol2(pdb_path, remove_ligand=False):
+    if not PYMOL2_AVAILABLE:
+        logging.error("pymol2 is not available for SASA computation.")
+        return None
+    with pymol2.PyMOL() as pymol_instance:
+        cmd = pymol_instance.cmd
+        cmd.reinitialize()
+        logging.info(f"Loading {pdb_path} in pymol2 for SASA computation...")
+        cmd.load(pdb_path, "protein")
+        if remove_ligand:
+            cmd.remove("hetatm")
+            logging.info("Removed hetatm (ligands) for SASA computation.")
+        cmd.set("dot_solvent", 1)
+        cmd.get_area("protein", load_b=1)
+        model = cmd.get_model("protein")
+        sasa_values = {str(atom.resi): atom.b for atom in model.atom}
+        logging.info("SASA computation using pymol2 completed.")
+        return sasa_values
+
+
+def compute_sasa_pymol(pdb_path, remove_ligand=False):
+    from utils.common import Fore, Style
+
+    pdb_file = os.path.abspath(pdb_path)
+    if not os.path.exists(pdb_file):
+        logging.error(f"File not found: {pdb_file}")
+        return None
+    if USE_PYMOL2:
+        try:
+            import pymol2
+
+            p = pymol2.PyMOL()
+            p.start()
+            cmd = p.cmd
+        except Exception as e:
+            logging.error(
+                Fore.RED + Style.BRIGHT + f"[ERROR] Failed to start PyMOL2: {e}"
+            )
+            return None
+    else:
+        try:
+            from pymol import cmd
+
+            cmd.reinitialize()
+        except Exception as e:
+            logging.error(
+                Fore.RED + Style.BRIGHT + f"[ERROR] Failed to initialize PyMOL: {e}"
+            )
+            return None
+    logging.info("Loading " + pdb_file + " in pymol for SASA computation...")
+    try:
+        cmd.load(pdb_file, "protein")
+    except Exception as e:
+        logging.error(
+            Fore.RED
+            + Style.BRIGHT
+            + f"[ERROR] Failed to load PDB file '{pdb_file}': {e}"
+        )
+        return None
+    if remove_ligand:
+        cmd.remove("hetatm")
+        logging.info("Ligands removed for SASA computation.")
+    cmd.set("dot_solvent", 1)
+    cmd.get_area("protein", load_b=1)
+    sasa_values = {resi.resi: resi.b for resi in cmd.get_model("protein").atom}
+    cmd.delete("protein")
+    logging.info("SASA computation completed.")
+    return sasa_values
+
+
+def compute_ligand_contact_sasa(sasa_before, sasa_after):
+    if not sasa_before or not sasa_after:
+        logging.warning("Incomplete SASA data; cannot compute ligand contact.")
+        return {}
+    contacting = {}
+    for atom_idx, area_before in sasa_before.items():
+        area_after = sasa_after.get(atom_idx, 0)
+        if area_before > area_after:
+            contacting[atom_idx] = area_before
+    return contacting
+
+
+def evaluate_sasa_contact(
+    pocket_atom_indices,
+    sasa_before,
+    sasa_after,
+    ligand_coords,
+    protein_coords,
+    threshold=SASA_CONTACT_THRESHOLD,
+):
+    contact_atoms = []
+    for idx in pocket_atom_indices:
+        res_id = str(idx)
+        sasa_b = sasa_before.get(res_id, 0)
+        sasa_a = sasa_after.get(res_id, 0)
+        if sasa_b > sasa_a:
+            contact_atoms.append(protein_coords[idx])
+    if not contact_atoms or ligand_coords.size == 0:
+        return False
+    distances = cdist(np.array(contact_atoms), ligand_coords)
+    min_dist = np.min(distances)
+    return min_dist <= threshold
+
+
+### FILE: C:\github\pycasta\src\pycasta\validation\__init__.py
+# Automatically added to make this a package
+
+

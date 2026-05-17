@@ -116,10 +116,7 @@ def detect_pockets(
     )
     ranked_pockets, pocket_volumes, ranking_scores = zip(*ranked_data)
 
-    for pocket in ranked_pockets:
-        dual_info = compute_dual_set_for_pocket(
-            pocket, tetra_positions, radii, alpha_value=alpha_value, decimals=3
-        )
+  
     representative_points = [
         np.mean(tetra_positions[p].reshape(-1, 3), axis=0) for p in ranked_pockets
     ]
