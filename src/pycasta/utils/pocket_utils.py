@@ -25,6 +25,7 @@ from ..config import (
 )
 import os
 import pandas as pd
+from .geometry_utils import compute_triangle_area
 
 
 def compute_ligand_contact_distance(
@@ -63,7 +64,7 @@ def compute_mouth_parameters(
         boundary_faces = [face for face, count in face_count.items() if count == 1]
         total_area, total_circumference, rim_atoms = 0, 0, set()
         face_centroids = []
-        from utils.geometry_utils import compute_triangle_area
+        
 
         for face in boundary_faces:
             pts = protein_coords[list(face)]

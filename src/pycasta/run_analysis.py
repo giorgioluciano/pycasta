@@ -31,6 +31,7 @@ from .config import (
     INCLUDE_WATER,
     LIGAND_CONTACT_METHOD,
     LIGAND_CONTACT_THRESHOLD,
+    MANUAL_ALPHA,
     MERGE_CLUSTERS,
     MERGE_THRESHOLD,
     MESH_EXTRUSION_DISTANCE,
@@ -84,6 +85,8 @@ from .utils.pocket_utils import (
 from .utils.preprocessing_utils import calculate_atomic_radii, load_and_separate_pdb
 from .results_analysis import save_summary_csv, save_summary_json
 from .utils.sasa_utils import compute_sasa, compute_ligand_contact_sasa, evaluate_sasa_contact
+
+from . import config as cfg
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logging.info(f"Validation method: {VALIDATION_METHOD}")
@@ -228,7 +231,7 @@ def process_pdb(pdb_path):
 
     # Alpha shape
     logging.info("Computing alpha shape...")
-    alpha = get_alpha()
+    alpha = cfg.MANUAL_ALPHA
     logging.info(f"Alpha = {alpha}")
     alpha_mask, radii, tetra_positions, simplices = compute_alpha_complex_from_tetrahedra(
         simplices, tetra_positions, alpha, base,

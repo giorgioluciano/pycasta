@@ -11,7 +11,7 @@ import logging
 import numpy as np
 from .alpha_shape import compute_alpha_complex_from_tetrahedra, flow_detection
 from .ranking import compute_ranking_scores
-from .config import MIN_POCKET_VOLUME, FLOW_KWARGS, MERGE_CLUSTERS, MERGE_THRESHOLD
+from .config import MIN_POCKET_VOLUME, FLOW_KWARGS, MERGE_CLUSTERS, MERGE_THRESHOLD,MANUAL_ALPHA
 from .utils.pocket_utils import merge_nearby_clusters
 from .dual_sets import compute_dual_set_for_pocket, compute_dual_mouths
 
@@ -45,7 +45,7 @@ def detect_pockets(
     if merge_clusters is None:
         merge_clusters = MERGE_CLUSTERS
     if merge_threshold is None:
-        merge_threshold = get_merge_threshold()
+        merge_threshold =  MERGE_THRESHOLD
     logging.info(f"[CONFIG] Merge threshold currently set to: {merge_threshold}")
     if tetra_positions is None:
         tetra_positions = protein_coords[simplices]
@@ -56,7 +56,7 @@ def detect_pockets(
             f"ERROR: Some simplex indices exceed protein_coords size ({max_index})."
         )
 
-    alpha_value = get_alpha()
+    alpha_value = MANUAL_ALPHA
 
     if alpha_mask is None or radii is None:
         alpha_mask, radii, tetra_positions, simplices = (
