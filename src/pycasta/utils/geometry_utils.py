@@ -15,7 +15,7 @@ from scipy.spatial import Delaunay, ConvexHull
 from scipy.spatial.distance import cdist
 from sklearn.decomposition import PCA
 import trimesh
-from config import (
+from ..config import (
     SAVE_EXTRUDED_MESHES,
     OUTPUT_DIR,
     MESH_EXTRUSION_DISTANCE,

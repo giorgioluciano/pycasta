@@ -12,7 +12,7 @@ Module containing utility functions for pockets:
 import numpy as np
 from scipy.spatial.distance import cdist
 import logging
-from config import (
+from ..config import (
     SIMPLE_SPLIT,
     ATOM_SPLITTING,
     ATOM_SPLITTING_MODE,

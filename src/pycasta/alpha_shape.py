@@ -9,7 +9,10 @@ Module for computing the alpha shape and for the flow_detection function.
 import os
 import numpy as np
 import logging
-from config import (
+from scipy.spatial import KDTree
+from biopandas.pdb import PandasPdb
+
+from .config import (
     SIMPLE_SPLIT,
     ATOM_SPLITTING,
     ATOM_SPLITTING_MODE,
@@ -19,17 +22,14 @@ from config import (
     FILTER_AFTER_MERGE,
     SASA_CONTACT_THRESHOLD,
 )
-from utils.geometry_utils import compute_all_circumsphere_radii, log_radii_statistics
-from scipy.spatial import KDTree
-from utils.pocket_utils import apply_splitting_to_shared_atoms
+from .utils.geometry_utils import compute_all_circumsphere_radii, log_radii_statistics
+from .utils.pocket_utils import apply_splitting_to_shared_atoms
+from .utils.sasa_utils import compute_sasa
 
 
 def filter_alpha_complex_by_sasa(
     tetrahedra, alpha_values, protein_coords, pdb_file, sasa_threshold
 ):
-    from utils.sasa_utils import compute_sasa
-    from biopandas.pdb import PandasPdb
-
     logging.info("Computing SASA for filtering the alpha complex...")
     sasa_dict = compute_sasa(pdb_file, method="pymol", remove_ligand=True)
     if sasa_dict is None:
@@ -38,7 +38,7 @@ def filter_alpha_complex_by_sasa(
     ppdb = PandasPdb().read_pdb(pdb_file)
     atoms_df = ppdb.df["ATOM"]
     atom_residues = atoms_df["residue_number"].values
-    from scipy.spatial import KDTree
+    
 
     tree = KDTree(protein_coords)
     filtered_indices = []

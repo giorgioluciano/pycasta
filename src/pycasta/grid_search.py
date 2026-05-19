@@ -12,7 +12,7 @@ import logging
 import os
 import numpy as np
 from run_analysis import process_pdb
-from config import (
+from .config import (
     OUTPUT_DIR,
     VERSION_TAG,
     MANUAL_ALPHA,

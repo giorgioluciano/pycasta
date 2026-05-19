@@ -11,7 +11,7 @@ import logging
 import numpy as np
 from scipy.spatial import Delaunay
 
-from config import USE_CGAL, WEIGHTED_DELAUNAY
+from .config import USE_CGAL, WEIGHTED_DELAUNAY
 
 
 def cgal_weighted_delaunay(protein_coords, radii):

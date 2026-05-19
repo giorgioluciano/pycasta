@@ -11,7 +11,7 @@ import json
 import logging
 import numpy as np
 import csv
-from config import VALIDATION_METHOD
+from ..config import VALIDATION_METHOD
 
 
 def np_converter(obj):

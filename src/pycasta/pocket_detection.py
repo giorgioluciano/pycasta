@@ -9,12 +9,11 @@ Uses alpha shape calculation, discrete flow, and cluster merging.
 
 import logging
 import numpy as np
-from alpha_shape import compute_alpha_complex_from_tetrahedra, flow_detection
-from ranking import compute_ranking_scores
-from config import MIN_POCKET_VOLUME, FLOW_KWARGS, MERGE_CLUSTERS, MERGE_THRESHOLD
-from utils.pocket_utils import merge_nearby_clusters
-from dual_sets import compute_dual_set_for_pocket, compute_dual_mouths
-from config import get_alpha, get_merge_threshold
+from .alpha_shape import compute_alpha_complex_from_tetrahedra, flow_detection
+from .ranking import compute_ranking_scores
+from .config import MIN_POCKET_VOLUME, FLOW_KWARGS, MERGE_CLUSTERS, MERGE_THRESHOLD
+from .utils.pocket_utils import merge_nearby_clusters
+from .dual_sets import compute_dual_set_for_pocket, compute_dual_mouths
 
 
 # Analytic pocket volume computation defined here
@@ -56,8 +55,6 @@ def detect_pockets(
         raise ValueError(
             f"ERROR: Some simplex indices exceed protein_coords size ({max_index})."
         )
-
-    from config import get_alpha
 
     alpha_value = get_alpha()
 

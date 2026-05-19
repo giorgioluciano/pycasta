@@ -10,24 +10,9 @@ import os
 import logging
 import numpy as np
 from scipy.spatial.distance import cdist
-from config import SASA_METHOD, USE_PYMOL2, SASA_CONTACT_THRESHOLD
+from ..config import SASA_METHOD, SASA_CONTACT_THRESHOLD
 
-try:
-    import pymol
 
-    pymol.finish_launching(["-qc"])
-    PYMOL_AVAILABLE = True
-except ImportError:
-    PYMOL_AVAILABLE = False
-    logging.warning("PyMOL not found. SASA will not be computed using PyMOL.")
-
-try:
-    import pymol2
-
-    PYMOL2_AVAILABLE = True
-except ImportError:
-    PYMOL2_AVAILABLE = False
-    logging.warning("pymol2 not found.")
 
 try:
     import freesasa
@@ -38,82 +23,14 @@ except ImportError:
     logging.warning("FreeSASA not found.")
 
 
-def compute_sasa(pdb_path, method=None, remove_ligand=False):
-    if method is None:
-        method = SASA_METHOD
-    if method.lower() == "pymol2":
-        return compute_sasa_pymol2(pdb_path, remove_ligand=remove_ligand)
-    else:
-        return compute_sasa_pymol(pdb_path, remove_ligand=remove_ligand)
-
-
-def compute_sasa_pymol2(pdb_path, remove_ligand=False):
-    if not PYMOL2_AVAILABLE:
-        logging.error("pymol2 is not available for SASA computation.")
-        return None
-    with pymol2.PyMOL() as pymol_instance:
-        cmd = pymol_instance.cmd
-        cmd.reinitialize()
-        logging.info(f"Loading {pdb_path} in pymol2 for SASA computation...")
-        cmd.load(pdb_path, "protein")
-        if remove_ligand:
-            cmd.remove("hetatm")
-            logging.info("Removed hetatm (ligands) for SASA computation.")
-        cmd.set("dot_solvent", 1)
-        cmd.get_area("protein", load_b=1)
-        model = cmd.get_model("protein")
-        sasa_values = {str(atom.resi): atom.b for atom in model.atom}
-        logging.info("SASA computation using pymol2 completed.")
-        return sasa_values
-
-
-def compute_sasa_pymol(pdb_path, remove_ligand=False):
-    from utils.common import Fore, Style
-
-    pdb_file = os.path.abspath(pdb_path)
-    if not os.path.exists(pdb_file):
-        logging.error(f"File not found: {pdb_file}")
-        return None
-    if USE_PYMOL2:
-        try:
-            import pymol2
-
-            p = pymol2.PyMOL()
-            p.start()
-            cmd = p.cmd
-        except Exception as e:
-            logging.error(
-                Fore.RED + Style.BRIGHT + f"[ERROR] Failed to start PyMOL2: {e}"
-            )
-            return None
-    else:
-        try:
-            from pymol import cmd
-
-            cmd.reinitialize()
-        except Exception as e:
-            logging.error(
-                Fore.RED + Style.BRIGHT + f"[ERROR] Failed to initialize PyMOL: {e}"
-            )
-            return None
-    logging.info("Loading " + pdb_file + " in pymol for SASA computation...")
-    try:
-        cmd.load(pdb_file, "protein")
-    except Exception as e:
-        logging.error(
-            Fore.RED
-            + Style.BRIGHT
-            + f"[ERROR] Failed to load PDB file '{pdb_file}': {e}"
-        )
-        return None
-    if remove_ligand:
-        cmd.remove("hetatm")
-        logging.info("Ligands removed for SASA computation.")
-    cmd.set("dot_solvent", 1)
-    cmd.get_area("protein", load_b=1)
-    sasa_values = {resi.resi: resi.b for resi in cmd.get_model("protein").atom}
-    cmd.delete("protein")
-    logging.info("SASA computation completed.")
+def compute_sasa(pdbpath, method=None, remove_ligand=False):
+    structure = freesasa.Structure(pdbpath)
+    result = freesasa.calc(structure)
+    sasa_values = {}
+    for i in range(structure.nAtoms()):
+        resi = structure.residueNumber(i)
+        area = result.atomArea(i)
+        sasa_values[resi] = sasa_values.get(resi, 0) + area
     return sasa_values
 
 

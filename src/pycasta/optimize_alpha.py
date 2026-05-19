@@ -8,11 +8,11 @@ Created on Mon Mar 31 21:14:08 2025
 import numpy as np
 import pandas as pd
 import os
-from config import set_alpha, set_merge_threshold, get_merge_threshold
-from run_entrypoint import run_all_analysis
+from .config import set_alpha, set_merge_threshold, get_merge_threshold, FLOW_KWARGS
+from .run_entrypoint import run_all_analysis
 
 # Optional: dynamic setter for flow kwargs
-from config import FLOW_KWARGS
+from .config import FLOW_KWARGS
 
 
 def set_flow_params(min_steps=None, min_volume=None, adaptive_factor=None, tol=None):

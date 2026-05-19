@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
-from config import VALIDATION_METHOD
+from .config import VALIDATION_METHOD
 
 
 def safe_sum_bool(lst):

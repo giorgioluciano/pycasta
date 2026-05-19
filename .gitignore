@@ -82,3 +82,9 @@ config.yaml
 *.bak
 *.swp
 *~
+
+
+output/
+src/pycasta/results/
+__pycache__/
+*.pyc

@@ -21,7 +21,7 @@ from Bio.PDB.Atom import Atom
 from scipy.spatial import Delaunay, KDTree
 from scipy.spatial.distance import cdist
 
-from config import (
+from .config import (
     BOUNDED_DIR,
     CORRESPONDENCE_FILE,
     DATASET_DIR,
@@ -53,26 +53,26 @@ from config import (
     VALIDATION_METHOD,
     VERSION_TAG,
     VOLUME_METHOD,
-    get_alpha,
+    
 )
 
-from alpha_shape import compute_alpha_complex_from_tetrahedra
-from cgal_wdelaunay import cgal_weighted_delaunay
-from pocket_detection import compute_analytic_pocket_volume, detect_pockets
-from ranking import compute_ranking_scores
+from .alpha_shape import compute_alpha_complex_from_tetrahedra
+from .cgal_wdelaunay import cgal_weighted_delaunay
+from .pocket_detection import compute_analytic_pocket_volume, detect_pockets
+from .ranking import compute_ranking_scores
 
-from utils.data_utils import (
+from .utils.data_utils import (
     convert_numpy_types,
     load_json,
     save_json,
     save_pocket_results_csv,
     
 )
-from utils.geometry_utils import (
+from .utils.geometry_utils import (
     validate_ligand_in_extruded_mesh,
     validate_ligand_in_fake_sphere,
 )
-from utils.pocket_utils import (
+from .utils.pocket_utils import (
     apply_splitting_to_shared_atoms,
     compute_mouth_parameters,
     compute_volume_for_tetra_group,
@@ -81,9 +81,9 @@ from utils.pocket_utils import (
 )
 
 
-from utils.preprocessing_utils import calculate_atomic_radii, load_and_separate_pdb
-from results_analysis import save_summary_csv, save_summary_json
-from utils.sasa_utils import compute_sasa, compute_ligand_contact_sasa, evaluate_sasa_contact
+from .utils.preprocessing_utils import calculate_atomic_radii, load_and_separate_pdb
+from .results_analysis import save_summary_csv, save_summary_json
+from .utils.sasa_utils import compute_sasa, compute_ligand_contact_sasa, evaluate_sasa_contact
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logging.info(f"Validation method: {VALIDATION_METHOD}")
@@ -445,66 +445,48 @@ def run_analysis_mode(pdb_sources, analysis_type="single", correspondence_df=Non
 
 def main():
     logging.info(f"=== PyCASTA analysis start | version={VERSION_TAG} ===")
-    out_dir = os.path.join(OUTPUT_DIR, VERSION_TAG)
+    out_dir = os.path.join(str(OUTPUT_DIR), VERSION_TAG)
     os.makedirs(out_dir, exist_ok=True)
 
-    bounded_files = glob.glob(os.path.join(BOUNDED_DIR, "*.pdb"))
+    bounded_files = glob.glob(os.path.join(str(BOUNDED_DIR), "*.pdb"))
     if not bounded_files:
         logging.error("No PDB files found in BOUNDED_DIR.")
         sys.exit(1)
 
-        if UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and CORRESPONDENCE_FILE and os.path.exists(CORRESPONDENCE_FILE):
+    correspondence_exists = (
+        CORRESPONDENCE_FILE is not None
+        and os.path.exists(str(CORRESPONDENCE_FILE))
+    )
+    unbounded_exists = (
+        UNBOUNDED_DIR is not None
+        and os.path.exists(str(UNBOUNDED_DIR))
+    )
+
+    if unbounded_exists and correspondence_exists:
         logging.info("Mode: paired")
         results = run_analysis_mode(
-            pdb_sources=bounded_files, analysis_type="paired",
+            pdb_sources=bounded_files,
+            analysis_type="paired",
             correspondence_df=pd.read_excel(CORRESPONDENCE_FILE),
         )
-        save_summary_json(
-            results,
-            os.path.join(out_dir, "paired_summary.json"),
-            analysis_type="paired",
-        )
-        save_summary_csv(
-            results,
-            os.path.join(out_dir, "paired_summary.csv"),
-        )
+        save_summary_json(results, os.path.join(out_dir, "paired_summary.json"), analysis_type="paired")
+        save_summary_csv(results, os.path.join(out_dir, "paired_summary.csv"))
 
-    elif not UNBOUNDED_DIR or not os.path.exists(UNBOUNDED_DIR):
-        logging.info("Mode: single (bounded)")
-        results = run_analysis_mode(pdb_sources=bounded_files, analysis_type="single")
-        save_summary_json(
-            results,
-            os.path.join(out_dir, "single_summary.json"),
-            analysis_type="single",
-        )
-        save_summary_csv(
-            results,
-            os.path.join(out_dir, "single_summary.csv"),
-        )
-
-    elif UNBOUNDED_DIR and os.path.exists(UNBOUNDED_DIR) and not CORRESPONDENCE_FILE:
+    elif unbounded_exists and not correspondence_exists:
         logging.info("Mode: unbounded")
-        unbounded_files = glob.glob(os.path.join(UNBOUNDED_DIR, "*.pdb"))
+        unbounded_files = glob.glob(os.path.join(str(UNBOUNDED_DIR), "*.pdb"))
         if not unbounded_files:
             logging.error("No PDB files found in UNBOUNDED_DIR.")
             sys.exit(1)
         results = run_analysis_mode(pdb_sources=unbounded_files, analysis_type="unbounded")
-        save_summary_json(
-            results,
-            os.path.join(out_dir, "unbounded_summary.json"),
-            analysis_type="unbounded",
-        )
-        save_summary_csv(
-            results,
-            os.path.join(out_dir, "unbounded_summary.csv"),
-        )
+        save_summary_json(results, os.path.join(out_dir, "unbounded_summary.json"), analysis_type="unbounded")
+        save_summary_csv(results, os.path.join(out_dir, "unbounded_summary.csv"))
 
     else:
-        logging.error("Invalid configuration: check UNBOUNDED_DIR and CORRESPONDENCE_FILE.")
-        sys.exit(1)
-     
+        logging.info("Mode: single (bounded)")
+        results = run_analysis_mode(pdb_sources=bounded_files, analysis_type="single")
+        save_summary_json(results, os.path.join(out_dir, "single_summary.json"), analysis_type="single")
+        save_summary_csv(results, os.path.join(out_dir, "single_summary.csv"))
+
     logging.info(f"=== Analysis complete. Results in: {out_dir} ===")
-
-
-if __name__ == "__main__":
-    main()
+    

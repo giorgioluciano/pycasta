@@ -13,8 +13,8 @@ import logging
 import numpy as np
 import pandas as pd
 from biopandas.pdb import PandasPdb
-from config import INCLUDE_WATER, CONNECTIVITY_THRESHOLD
-from atomic_radii import ATOMIC_RADII_DICT, DEFAULT_RADIUS
+from ..config import INCLUDE_WATER, CONNECTIVITY_THRESHOLD
+from ..atomic_radii import ATOMIC_RADII_DICT, DEFAULT_RADIUS
 from scipy.spatial import KDTree
 
 
