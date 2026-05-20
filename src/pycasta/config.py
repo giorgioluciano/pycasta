@@ -84,3 +84,33 @@ USE_EXISTING_RESULTS = True
 DEBUG = True
 
 VERSION_TAG = "smoke"
+_current_alpha = None
+_current_merge_threshold = None
+
+
+def get_alpha():
+    return MANUAL_ALPHA if _current_alpha is None else _current_alpha
+
+
+def set_alpha(value):
+    global _current_alpha
+    _current_alpha = float(value)
+
+
+def reset_alpha():
+    global _current_alpha
+    _current_alpha = None
+
+
+def get_merge_threshold():
+    return MERGE_THRESHOLD if _current_merge_threshold is None else _current_merge_threshold
+
+
+def set_merge_threshold(value):
+    global _current_merge_threshold
+    _current_merge_threshold = float(value)
+
+
+def reset_merge_threshold():
+    global _current_merge_threshold
+    _current_merge_threshold = None

@@ -86,6 +86,14 @@ from .utils.preprocessing_utils import calculate_atomic_radii, load_and_separate
 from .results_analysis import save_summary_csv, save_summary_json
 from .utils.sasa_utils import compute_sasa, compute_ligand_contact_sasa, evaluate_sasa_contact
 
+from .pipeline.feature_pipeline import (
+    build_pocket_candidates,
+    enrich_with_geometry,
+    enrich_with_mouth,
+)
+from .pipeline.scoring_pipeline import score_candidates
+from .alpha_stability import alpha_stability
+
 from . import config as cfg
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -231,7 +239,7 @@ def process_pdb(pdb_path):
 
     # Alpha shape
     logging.info("Computing alpha shape...")
-    alpha = cfg.MANUAL_ALPHA
+    alpha = cfg.get_alpha()
     logging.info(f"Alpha = {alpha}")
     alpha_mask, radii, tetra_positions, simplices = compute_alpha_complex_from_tetrahedra(
         simplices, tetra_positions, alpha, base,
@@ -247,31 +255,80 @@ def process_pdb(pdb_path):
         molecule_name=base,
         radii=radii,
     )
-    ranked_pockets      = pocket_info.get("ranked_pockets", [])
-    representative_pts  = pocket_info.get("representative_points", [])
-    ranking_scores      = pocket_info.get("ranking_scores", [])
-    result.update({"ranked_pockets": ranked_pockets, "representative_points": representative_pts, "ranking_scores": ranking_scores})
+    raw_ranked_pockets = pocket_info.get("ranked_pockets", [])
+
+    candidates = build_pocket_candidates(raw_ranked_pockets, tetra_positions)
+    candidates = enrich_with_geometry(candidates, tetra_positions)
+    candidates = enrich_with_mouth(
+        candidates,
+        ranked_pockets=raw_ranked_pockets,
+        simplices=simplices,
+        protein_coords=protein_coords,
+        ligand_coords=ligand_coords,
+    )
+    candidates = score_candidates(candidates)
+
+    ranked_pockets = [c.tetra_indices for c in candidates]
+    representative_pts = [c.representative_point for c in candidates]
+    ranking_scores = [c.scores.get("global", 0.0) for c in candidates]
+    try:
+        stability_info = alpha_stability(
+            protein_coords=protein_coords,
+            simplices=simplices,
+            tetra_positions=tetra_positions,
+            molecule_name=base,
+            base_alpha=None,
+            alpha_offsets=[-0.2, -0.1, 0.0, 0.1, 0.2],
+            min_volume_threshold=MIN_POCKET_VOLUME,
+            flow_params=FLOW_KWARGS,
+            merge_clusters=MERGE_CLUSTERS,
+            merge_threshold=MERGE_THRESHOLD,
+        )
+        result["alpha_stability"] = stability_info
+    except Exception as e:
+        logging.warning(f"Alpha stability analysis failed for {base}: {e}")
+        result["alpha_stability"] = {
+            "stable": False,
+            "error": str(e),
+        }
+
+    result.update(
+        {
+            "ranked_pockets": ranked_pockets,
+            "representative_points": representative_pts,
+            "ranking_scores": ranking_scores,
+            "pocket_features": [c.features for c in candidates],
+            "pocket_scores": [c.scores for c in candidates],
+        }
+    )
+
 
     # Volumes and depths
-    pocket_volumes, pocket_depths = [], []
-    for idx, pocket in enumerate(ranked_pockets):
-        valid_idx = [t for t in pocket if 0 <= t < len(protein_coords)]
-        if valid_idx:
-            volume = compute_analytic_pocket_volume(tetra_positions, valid_idx)
-            depth  = float(np.max([np.linalg.norm(protein_coords[t] - protein_coords[valid_idx[0]]) for t in valid_idx]))
-            logging.info(f"Pocket {idx+1}: volume={volume:.2f}, depth={depth:.2f}")
-        else:
-            volume, depth = 0.0, 0.0
-            logging.warning(f"Pocket {idx+1}: no valid tetrahedra.")
-        pocket_volumes.append(volume)
-        pocket_depths.append(depth)
+    pocket_volumes = [c.volume if c.volume is not None else 0.0 for c in candidates]
+    pocket_depths = [c.depth if c.depth is not None else 0.0 for c in candidates]
+
+    for idx, candidate in enumerate(candidates, start=1):
+        logging.info(
+            f"Pocket {idx}: volume={candidate.volume:.2f}, depth={candidate.depth:.2f}, score={candidate.scores.get('global', 0.0):.2f}"
+        )
+
     result["pocket_volumes"] = pocket_volumes
-    result["pocket_depths"]  = pocket_depths
+    result["pocket_depths"] = pocket_depths
 
     # Mouth parameters
-    mouth_params = compute_mouth_parameters(ranked_pockets, simplices, protein_coords, ligand_coords)
-    result["mouth_area"]      = [m.get("mouth_area", 0)         for m in mouth_params]
-    result["mouth_perimeter"] = [m.get("mouth_circumference", 0) for m in mouth_params]
+    result["mouth_area"] = [c.mouth_area if c.mouth_area is not None else 0 for c in candidates]
+    result["mouth_perimeter"] = [c.mouth_perimeter if c.mouth_perimeter is not None else 0 for c in candidates]
+
+    mouth_params = [
+        {
+            "mouth_area": c.mouth_area,
+            "mouth_circumference": c.mouth_perimeter,
+            "rim_atoms": c.rim_atoms,
+            "mouth_center": c.mouth_center,
+            "ligand_distance": c.ligand_distance_to_mouth,
+        }
+        for c in candidates
+    ]
 
     # Validation
     validation_methods      = []
@@ -492,4 +549,6 @@ def main():
         save_summary_csv(results, os.path.join(out_dir, "single_summary.csv"))
 
     logging.info(f"=== Analysis complete. Results in: {out_dir} ===")
-    
+       
+if __name__ == "__main__":
+    main()
