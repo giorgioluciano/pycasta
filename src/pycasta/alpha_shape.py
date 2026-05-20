@@ -255,7 +255,7 @@ def flow_detection(
                 final_pockets.append(component)
                 connectivity_graph[len(final_pockets) - 1] = graph
 
-    logging.info(f"Flow detection found {len(final_pockets)} preliminary pockets.")
+    
     final_pockets = apply_splitting_to_shared_atoms(
         final_pockets, protein_coords, flow_params.get("atom_radii")
     )

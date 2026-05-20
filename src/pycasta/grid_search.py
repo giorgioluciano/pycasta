@@ -21,8 +21,6 @@ from .config import (
     FLOW_KWARGS,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
 alpha_values = [5.0, 5.4, 6.0]
 volume_thresholds = [40, 50, 60]
 merge_thresholds = [3, 4, 5]
