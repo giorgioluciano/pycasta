@@ -198,7 +198,7 @@ def compute_triangle_perimeter(triangle):
 
 def compute_circumcenter(tetra):
     A, B, C, D = tetra
-    M = np.vstack([B - A, C - A, D - A]).T
+    M = np.vstack([B - A, C - A, D - A])
     rhs = 0.5 * np.array(
         [np.dot(B - A, B - A), np.dot(C - A, C - A), np.dot(D - A, D - A)]
     )
