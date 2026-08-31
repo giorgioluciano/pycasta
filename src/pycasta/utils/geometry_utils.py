@@ -118,7 +118,7 @@ def compute_circumsphere_radius(tetra):
         return np.inf
     A, B, C, D = tetra
     AB, AC, AD = B - A, C - A, D - A
-    M = np.vstack([AB, AC, AD]).T
+    M = np.vstack([AB, AC, AD])
     try:
         rhs = 0.5 * np.array([np.dot(AB, AB), np.dot(AC, AC), np.dot(AD, AD)])
         sol = np.linalg.solve(M, rhs)
