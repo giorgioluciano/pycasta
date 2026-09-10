@@ -11,11 +11,11 @@ import logging
 import numpy as np
 from scipy.spatial import Delaunay
 
-from .config import USE_CGAL, WEIGHTED_DELAUNAY
-
+from .config import USE_CGAL
+WEIGHTED_DELAUNAY = True
 
 def cgal_weighted_delaunay(protein_coords, radii):
-    if USE_CGAL and WEIGHTED_DELAUNAY:
+    if USE_CGAL:
         try:
             from pocketlab import build_regular_triangulation
 

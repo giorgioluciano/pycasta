@@ -10,8 +10,7 @@ import os
 import logging
 import numpy as np
 from scipy.spatial.distance import cdist
-from ..config import SASA_METHOD, SASA_CONTACT_THRESHOLD
-
+from ..config import SASA_METHOD
 
 
 try:
@@ -52,8 +51,7 @@ def evaluate_sasa_contact(
     sasa_after,
     ligand_coords,
     protein_coords,
-    threshold=SASA_CONTACT_THRESHOLD,
-):
+    ):
     contact_atoms = []
     for idx in pocket_atom_indices:
         res_id = str(idx)

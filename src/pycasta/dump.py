@@ -59,6 +59,8 @@ def collect_file_contents(root: Path) -> str:
             if should_skip_file(filename):
                 continue
             path = Path(dirpath) / filename
+            if path.resolve() == OUTFILE.resolve():
+                continue
             if not is_text_file(path):
                 continue
             try:

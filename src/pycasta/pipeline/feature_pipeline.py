@@ -1,4 +1,9 @@
 import numpy as np
+import logging
+
+from scipy.spatial import KDTree
+
+from .. import config
 
 from .models import PocketCandidate
 from ..features.geometry_features import compute_geometry_features

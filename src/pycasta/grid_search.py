@@ -11,16 +11,19 @@ import json
 import logging
 import os
 import numpy as np
-from run_analysis import process_pdb
+
+from .run_analysis import process_pdb
 from .config import (
     OUTPUT_DIR,
     VERSION_TAG,
-    MANUAL_ALPHA,
-    MIN_POCKET_VOLUME,
-    MERGE_THRESHOLD,
     FLOW_KWARGS,
+    set_alpha,
+    reset_alpha,
+    set_merge_threshold,
+    reset_merge_threshold,
+    set_min_pocket_volume,
+    reset_min_pocket_volume,
 )
-
 alpha_values = [5.0, 5.4, 6.0]
 volume_thresholds = [40, 50, 60]
 merge_thresholds = [3, 4, 5]
@@ -60,22 +63,32 @@ results_summary = []
 
 for combo in parameter_grid:
     alpha_val, vol_thresh, merge_thresh, flow_tol, flow_max, flow_adapt = combo
-    from config import MANUAL_ALPHA, MIN_POCKET_VOLUME, MERGE_THRESHOLD, FLOW_KWARGS
 
-    MANUAL_ALPHA = alpha_val
-    MIN_POCKET_VOLUME = vol_thresh
-    MERGE_THRESHOLD = merge_thresh
-    FLOW_KWARGS["tol"] = flow_tol
+    set_alpha(alpha_val)
+    set_min_pocket_volume(vol_thresh)
+    set_merge_threshold(merge_thresh)
+
+    old_tol = FLOW_KWARGS.get("tol_fraction")
+    old_max_steps = FLOW_KWARGS.get("max_steps")
+    old_adaptive_factor = FLOW_KWARGS.get("adaptive_factor")
+
+    FLOW_KWARGS["tol_fraction"] = flow_tol
     FLOW_KWARGS["max_steps"] = flow_max
     FLOW_KWARGS["adaptive_factor"] = flow_adapt
+
     logging.info(
-        f"Testing parameters: alpha={alpha_val}, volume_threshold={vol_thresh}, merge_threshold={merge_thresh}, flow_tol={flow_tol}, max_steps={flow_max}, adaptive_factor={flow_adapt}"
+        f"Testing parameters: alpha={alpha_val}, volume_threshold={vol_thresh}, "
+        f"merge_threshold={merge_thresh}, flow_tol={flow_tol}, "
+        f"max_steps={flow_max}, adaptive_factor={flow_adapt}"
     )
+
     result = process_pdb(test_pdb)
     score = evaluate_result(result)
+
     logging.info(
         f"Result: {len(result.get('ranked_pockets', []))} pockets, score={score}"
     )
+
     results_summary.append(
         {
             "params": {
@@ -90,9 +103,19 @@ for combo in parameter_grid:
             "score": score,
         }
     )
+
     if score < best_score:
         best_score = score
         best_params = combo
+
+    FLOW_KWARGS["tol_fraction"] = old_tol
+    FLOW_KWARGS["max_steps"] = old_max_steps
+    FLOW_KWARGS["adaptive_factor"] = old_adaptive_factor
+    
+reset_alpha()
+reset_min_pocket_volume()
+reset_merge_threshold()
+
 
 logging.info(f"Best score: {best_score} with parameters: {best_params}")
 output_file = os.path.join(

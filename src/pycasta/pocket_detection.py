@@ -8,16 +8,16 @@ Uses alpha shape calculation, discrete flow, and cluster merging.
 """
 
 import logging
+
+
+
+# pocketdetection.py
+import logging
 import numpy as np
+
+from . import config as cfg
 from .alpha_shape import compute_alpha_complex_from_tetrahedra, flow_detection
 from .ranking import compute_ranking_scores
-from .config import (
-    MIN_POCKET_VOLUME,
-    FLOW_KWARGS,
-    MERGE_CLUSTERS,
-    get_alpha,
-    get_merge_threshold,
-)
 from .utils.pocket_utils import merge_nearby_clusters
 from .dual_sets import compute_dual_set_for_pocket, compute_dual_mouths
 
@@ -45,33 +45,46 @@ def detect_pockets(
     radii=None,
 ):
     if min_volume_threshold is None:
-        min_volume_threshold = MIN_POCKET_VOLUME
+        min_volume_threshold = cfg.get_min_pocket_volume()
+
     if flow_params is None:
-        flow_params = FLOW_KWARGS
+        flow_params = cfg.FLOW_KWARGS
+
     if merge_clusters is None:
-        merge_clusters = MERGE_CLUSTERS
+        merge_clusters = cfg.MERGE_CLUSTERS
+
     if merge_threshold is None:
-        merge_threshold =  get_merge_threshold()
-    logging.info(f"[CONFIG] Merge threshold currently set to: {merge_threshold}")
+        merge_threshold = cfg.get_merge_threshold()
+
+    logging.info(f"CONFIG Merge threshold currently set to {merge_threshold}")
+
     if tetra_positions is None:
         tetra_positions = protein_coords[simplices]
+
     logging.info(f"Delaunay triangulation: {len(simplices)} tetrahedra found.")
     max_index = len(protein_coords) - 1
+
     if np.max(simplices) > max_index:
         raise ValueError(
             f"ERROR: Some simplex indices exceed protein_coords size ({max_index})."
         )
 
-    alpha_value = get_alpha()
+    alpha_value = cfg.get_alpha()
 
     if alpha_mask is None or radii is None:
-        alpha_mask, radii, tetra_positions, simplices = (
-            compute_alpha_complex_from_tetrahedra(
-                simplices, tetra_positions, alpha_value, molecule_name, protein_coords
-            )
+        alpha_mask, radii, tetra_positions, simplices = compute_alpha_complex_from_tetrahedra(
+            simplices,
+            tetra_positions,
+            alpha_value,
+            molecule_name,
+            protein_coords,
+            radii=radii,
+            filter_by_sasa=filter_by_sasa,
+            sasa_threshold=sasa_thresold,
+            pdb_file=pdb_file,
         )
 
-    logging.info(f"Using alpha shape with alpha = {alpha_value}")
+    logging.info(f"Using alpha shape with alpha {alpha_value}")
     logging.info(
         f"Alpha shape retained {int(np.sum(alpha_mask))} tetrahedra out of {len(alpha_mask)}."
     )
@@ -79,7 +92,7 @@ def detect_pockets(
         logging.warning("Alpha shape filtered out all tetrahedra. No pockets detected.")
         return [], [], []
     pockets, flow_steps, connectivity_graph = flow_detection(
-        simplices, alpha_mask, tetra_positions, protein_coords, flow_params
+        simplices, alpha_mask, tetra_positions, protein_coords, flow_params,proxy_values=radii,
     )
     logging.info(f"Flow detection found {len(pockets)} preliminary pockets.")
     valid_pockets = []

@@ -116,16 +116,29 @@ def validate_ligand_in_fake_sphere(mouth_coords, ligand_coords, radius=1.4):
 def compute_circumsphere_radius(tetra):
     if tetra.shape[0] != 4:
         return np.inf
+
     A, B, C, D = tetra
-    AB, AC, AD = B - A, C - A, D - A
-    M = np.vstack([AB, AC, AD]).T
+    AB = B - A
+    AC = C - A
+    AD = D - A
+
+    M = np.vstack([AB, AC, AD])
+
     try:
-        rhs = 0.5 * np.array([np.dot(AB, AB), np.dot(AC, AC), np.dot(AD, AD)])
-        sol = np.linalg.solve(M, rhs)
-        radius = np.linalg.norm(sol)
+        rhs = 0.5 * np.array(
+            [
+                np.dot(AB, AB),
+                np.dot(AC, AC),
+                np.dot(AD, AD),
+            ]
+        )
+        center_relative = np.linalg.solve(M, rhs)
+        radius = np.linalg.norm(center_relative)
     except np.linalg.LinAlgError:
         radius = np.inf
+
     return radius
+
 
 
 def log_radii_statistics(radii):
@@ -198,17 +211,24 @@ def compute_triangle_perimeter(triangle):
 
 def compute_circumcenter(tetra):
     A, B, C, D = tetra
-    M = np.vstack([B - A, C - A, D - A]).T
+
+    M = np.vstack([B - A, C - A, D - A])
+
     rhs = 0.5 * np.array(
-        [np.dot(B - A, B - A), np.dot(C - A, C - A), np.dot(D - A, D - A)]
+        [
+            np.dot(B - A, B - A),
+            np.dot(C - A, C - A),
+            np.dot(D - A, D - A),
+        ]
     )
+
     try:
-        sol = np.linalg.solve(M, rhs)
-        circumcenter = A + sol
+        center_relative = np.linalg.solve(M, rhs)
+        circumcenter = A + center_relative
     except np.linalg.LinAlgError:
         circumcenter = np.array([np.nan, np.nan, np.nan])
-    return circumcenter
 
+    return circumcenter
 
 def compute_volume_for_tetra_group(tetra_positions, tetra_indices):
     total_volume = 0.0
@@ -218,3 +238,48 @@ def compute_volume_for_tetra_group(tetra_positions, tetra_indices):
         vol = np.abs(np.dot(a - d, np.cross(b - d, c - d))) / 6.0
         total_volume += vol
     return total_volume
+
+def compute_power_radii(tetra_indices, coords, radii):
+    
+    import numpy as np
+    
+    tetra_indices = np.asarray(tetra_indices, dtype=int)
+    coords = np.asarray(coords, dtype=float)
+    radii = np.asarray(radii, dtype=float)
+    
+    if tetra_indices.ndim != 2 or tetra_indices.shape[1] != 4:
+        raise ValueError("tetra_indices deve essere un array (N, 4)")
+    
+    n_tetra = len(tetra_indices)
+    power_radii = np.zeros(n_tetra, dtype=float)
+    weights = radii ** 2
+    
+    for i in range(n_tetra):
+        idx = tetra_indices[i]
+        P = coords[idx]          # (4, 3)
+        w = weights[idx]         # (4,)
+        
+        p1 = P[0]
+        norm2_P = np.sum(P ** 2, axis=1)  # (4,)
+        
+        # Sistema: 2 (p_j - p_1) · c = ||p_j||^2 - w_j - (||p_1||^2 - w_1), j=2,3,4
+        A = 2 * (P[1:] - p1)              # (3, 3)
+        b = (norm2_P[1:] - w[1:]) - (norm2_P[0] - w[0])  # (3,)
+        
+        try:
+            c = np.linalg.solve(A, b)
+        except np.linalg.LinAlgError:
+            # Tetraedro degenere: fallback a circumradius euclideo
+            from .geometry_utils import compute_circumsphere_radius
+            # Ricostruisci le posizioni dei 4 vertici
+            P_vertices = coords[idx]
+            power_radii[i] = compute_circumsphere_radius(P_vertices)
+            continue
+        
+        r2 = np.sum((c - p1) ** 2) - w[0]
+        if r2 < 0:
+            r2 = 0.0
+        
+        power_radii[i] = np.sqrt(r2)
+    
+    return power_radii

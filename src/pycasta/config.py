@@ -1,116 +1,130 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+# config.py - versione pulita
 from pathlib import Path
 
-"""
-Configuration file for the pocket detection and evaluation pipeline.
-Paths are resolved from the project root so the code is path-independent.
-"""
-
+# Alpha e merge (parametri runtime modificabili)
 _current_alpha = None
+_current_merge_threshold = None
+_current_min_pocket_volume = None
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Paths
+PROJECT_ROOT = Path(r"C:\github\pycasta")
 DATA_DIR = PROJECT_ROOT / "data"
-TESTSHORT_DIR = DATA_DIR / "testShort"
-OUTPUT_DIR = PROJECT_ROOT / "output"
+OUTPUT_DIR = r"C:\github\pycasta\results"
+VERSION_TAG = "pocketpicker_classic_alpha28"
 
-BOUNDED_DIR = TESTSHORT_DIR / "bounded"
-UNBOUNDED_DIR = TESTSHORT_DIR / "unbounded"
+
+BOUNDED_DIR = r"C:\github\pycasta\data\pocketpicker\holo"
+UNBOUNDED_DIR = None
 DATASET_DIR = DATA_DIR
-CORRESPONDENCE_FILE = TESTSHORT_DIR / "tables" / "correspondence.xlsx"
+CORRESPONDENCE_FILE = None
 
+# Geometria
 INCLUDE_WATER = False
 CONNECTIVITY_THRESHOLD = 1
-
-USE_SASA = True
-SASA_METHOD = "pymol"
-
 USE_CGAL = False
-WEIGHTED_DELAUNAY = False
 
+
+# SASA (solo per validazione, non filtering)
+SASA_METHOD = "freesasa"
 FILTER_ALPHA_BY_SASA = False
 SASA_THRESHOLD = 0
 
+# Atom splitting
 ATOM_SPLITTING = True
 ATOM_SPLITTING_MODE = "CAST"
 SIMPLE_SPLIT = False
 
+# Mouth parameters
 CALCULATE_MOUTH_PARAMETERS = True
 VOLUME_METHOD = "analytic"
 
+# Ligand contact
 LIGAND_CONTACT_METHOD = "sasa"
 LIGAND_CONTACT_THRESHOLD = 4.0
 LIGAND_THRESHOLD = 4.0
 STRICT_DISTANCE_THRESHOLD = 4.0
 
+# Alpha selection
 SEMIAUTO_ALPHA = False
-MANUAL_ALPHA = 2.0
+MANUAL_ALPHA = 2.8
 ALPHA_PREFERENCE = None
 
+# Pocket filtering
 SAVE_ALPHA = True
 MIN_POCKET_VOLUME = 50
 FILTER_AFTER_MERGE = True
 
+# Flow detection
 FLOW_METHOD = "discrete_approx"
 FLOW_KWARGS = {
     "max_steps": 100,
-    "tol": 0.01,
+    "tol_fraction": 0.01,
     "sigma_p": 1.4,
     "adaptive": True,
     "adaptive_factor": 0.5,
     "base_step_size": 3,
     "min_steps": 3,
-    "debug": True,
-    "write_steps": True,
+    "debug": False,  # disattiva per batch
+    "write_steps": False,
 }
 
+# Merge clusters
 MERGE_CLUSTERS = True
-MERGE_THRESHOLD = 18
+MERGE_THRESHOLD = 10
 
-USE_SASA_CONTACT_VALIDATION = False
-SASA_CONTACT_THRESHOLD = 4.0
-
+# Validation
 VALIDATION_METHOD = "mesh_extrusion"
-FAKE_SPHERE_RADIUS = 50
-MESH_EXTRUSION_DISTANCE = 4
+FAKE_SPHERE_RADIUS = 8
+MESH_EXTRUSION_DISTANCE = 10
 SAVE_EXTRUDED_MESHES = True
-
-NUM_POCKETS_TO_VALIDATE = 20
-ALPHA_RANKING = 1
-BETA_RANKING = 1
-NUM_POCKETS_TO_SAVE = 5
-USE_EXISTING_RESULTS = True
+NUM_POCKETS_TO_VALIDATE = 8
+USE_EXISTING_RESULTS = False
 DEBUG = True
 
-VERSION_TAG = "smoke"
-_current_alpha = None
-_current_merge_threshold = None
+# Ranking
+RANKING_METHOD = "percentile_log"
+ALPHA_RANKING = 1.0
+BETA_RANKING = 1.0
+NUM_POCKETS_TO_SAVE = 5
 
+# Graph filtering (opzionale)
+USE_GRAPH_FILTERED_ALPHA = False
+ALPHA_MAX_EDGE_FACTOR = 2.5
+ALPHA_LOCAL_SCALE_K = 6
 
+# Debug triangulation
+SAVE_TRIANGULATION_DEBUG = False  # disattiva per batch
+
+# Helper functions
 def get_alpha():
     return MANUAL_ALPHA if _current_alpha is None else _current_alpha
-
 
 def set_alpha(value):
     global _current_alpha
     _current_alpha = float(value)
 
-
 def reset_alpha():
     global _current_alpha
     _current_alpha = None
 
-
 def get_merge_threshold():
     return MERGE_THRESHOLD if _current_merge_threshold is None else _current_merge_threshold
-
 
 def set_merge_threshold(value):
     global _current_merge_threshold
     _current_merge_threshold = float(value)
 
-
 def reset_merge_threshold():
     global _current_merge_threshold
     _current_merge_threshold = None
+
+def get_min_pocket_volume():
+    return MIN_POCKET_VOLUME if _current_min_pocket_volume is None else _current_min_pocket_volume
+
+def set_min_pocket_volume(value):
+    global _current_min_pocket_volume
+    _current_min_pocket_volume = float(value)
+
+def reset_min_pocket_volume():
+    global _current_min_pocket_volume
+    _current_min_pocket_volume = None

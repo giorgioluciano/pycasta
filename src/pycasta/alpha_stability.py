@@ -7,13 +7,7 @@ import numpy as np
 from .alpha_shape import compute_alpha_complex_from_tetrahedra, flow_detection
 from .pocket_detection import compute_analytic_pocket_volume
 from .utils.pocket_utils import merge_nearby_clusters
-from .config import (
-    get_alpha,
-    get_merge_threshold,
-    FLOW_KWARGS,
-    MIN_POCKET_VOLUME,
-    MERGE_CLUSTERS,
-)
+from . import config as cfg
 
 
 def _round_float_list(values, ndigits=4):
@@ -49,20 +43,23 @@ def _single_alpha_run(
     merge_threshold=None,
 ):
     if min_volume_threshold is None:
-        min_volume_threshold = MIN_POCKET_VOLUME
+        min_volume_threshold = cfg.MIN_POCKET_VOLUME
     if flow_params is None:
-        flow_params = FLOW_KWARGS
+        flow_params = cfg.FLOW_KWARGS
     if merge_clusters is None:
-        merge_clusters = MERGE_CLUSTERS
+        merge_clusters = cfg.MERGE_CLUSTERS
     if merge_threshold is None:
-        merge_threshold = get_merge_threshold()
+        merge_threshold = cfg.get_merge_threshold()
 
-    alpha_mask, local_radii, local_tetra_positions, local_simplices = compute_alpha_complex_from_tetrahedra(
-        simplices=simplices,
-        tetra_positions=tetra_positions,
-        alpha_value=alpha_value,
-        molecule_name=molecule_name,
-        protein_coords=protein_coords,
+    alpha_mask, local_radii, local_tetra_positions, local_simplices = (
+        compute_alpha_complex_from_tetrahedra(
+            simplices=simplices.copy(),
+            tetra_positions=tetra_positions.copy(),
+            alpha_value=alpha_value,
+            molecule_name=molecule_name,
+            protein_coords=protein_coords,
+            save_alpha_data=False,
+        )
     )
 
     if np.sum(alpha_mask) == 0:
@@ -77,12 +74,15 @@ def _single_alpha_run(
             "max_volume": 0.0,
         }
 
+    # Use the same radii that were used for alpha filtering
+    # (circumradii for standard Delaunay, power radii for weighted Delaunay)
     pockets, flow_steps, connectivity_graph = flow_detection(
-        local_simplices,
+        simplices,
         alpha_mask,
-        local_tetra_positions,
+        tetra_positions,
         protein_coords,
         flow_params,
+        proxy_values=radii,  # radii is already computed earlier in this function
     )
 
     max_index = len(protein_coords) - 1
@@ -110,7 +110,7 @@ def _single_alpha_run(
         return {
             "alpha": float(alpha_value),
             "num_alpha_tetrahedra": int(np.sum(alpha_mask)),
-            "num_preliminary_pockets": len(pockets),
+            "num_preliminary_pockets": len(valid_pockets),
             "num_final_pockets": 0,
             "volumes": [],
             "top_signature": tuple(),
@@ -124,7 +124,7 @@ def _single_alpha_run(
     return {
         "alpha": float(alpha_value),
         "num_alpha_tetrahedra": int(np.sum(alpha_mask)),
-        "num_preliminary_pockets": len(pockets),
+        "num_preliminary_pockets": len(valid_pockets),
         "num_final_pockets": len(filtered_volumes),
         "volumes": _round_float_list(filtered_volumes, 4),
         "top_signature": _top_volume_signature(filtered_volumes, top_k=3, decimals=1),
@@ -146,7 +146,7 @@ def alpha_stability(
     merge_threshold=None,
 ):
     if base_alpha is None:
-        base_alpha = get_alpha()
+        base_alpha = cfg.get_alpha()
 
     if alpha_offsets is None:
         alpha_offsets = [-0.2, -0.1, 0.0, 0.1, 0.2]
