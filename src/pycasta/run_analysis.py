@@ -29,7 +29,7 @@ from . import config as cfg
 # Core modules
 from .pocket_detection import detect_pockets, compute_analytic_pocket_volume
 from .alpha_shape import compute_alpha_complex_from_tetrahedra
-from .cgal_wdelaunay import cgal_weighted_delaunay
+from .cgal_wdelaunay import weighted_delaunay
 from .alpha_stability import alpha_stability
 from .alpha_diagnostics import run_alpha_diagnostics
 from .atomic_radii import ATOMIC_RADII_DICT
@@ -47,11 +47,11 @@ from .utils.geometry_utils import (
     validate_ligand_in_extruded_mesh,
     validate_ligand_in_fake_sphere,
 )
-from .utils.sasa_utils import (
-    compute_sasa,
-    compute_ligand_contact_sasa,
-    evaluate_sasa_contact,
-)
+# from .utils.sasa_utils import (
+#     compute_ligand_contact_sasa,
+#     evaluate_sasa_contact,
+# )
+# Import commentati - funzioni non implementate
 from .utils.pocket_utils import (
     apply_splitting_to_shared_atoms,
     compute_volume_for_tetra_group,
@@ -348,7 +348,7 @@ def process_pdb(pdb_path):
     logging.info("Running triangulation...")
 
    
-    simplices, triangulation_info = cgal_weighted_delaunay(protein_coords, radii)
+    simplices, triangulation_info = weighted_delaunay(protein_coords, radii)
     logging.info("Using weighted Delaunay via CGAL/pocketlab.")
 
 
@@ -357,7 +357,7 @@ def process_pdb(pdb_path):
         logging.error(f"Invalid simplices shape: {simplices.shape}")
         return result
 
-    result["triangulation_backend"] = ("cgal_weighted_delaunay")
+    result["triangulation_backend"] = ("weighted_delaunay")
         
     logging.info(f"Triangulation backend: {result['triangulation_backend']}")
 
@@ -427,8 +427,53 @@ def process_pdb(pdb_path):
     candidates = score_candidates(candidates)
 
     ranked_pockets = [c.tetra_indices for c in candidates]
-    representative_pts = [c.representative_point for c in candidates]
-    ranking_scores = [c.scores.get("global", 0.0) for c in candidates]
+
+    # Compute SASA for each pocket using FreeSASA
+    # Compute SASA for each pocket using FreeSASA
+    from .utils.sasa_utils import compute_pocket_sasa
+
+    logging.info("Computing SASA for pockets...")
+    pocket_sasa = []
+
+    try:
+        logging.info(f"DEBUG: ranked_pockets type={type(ranked_pockets)}, len={len(ranked_pockets) if ranked_pockets else 'None'}")
+        print(f"DEBUG: ranked_pockets = {ranked_pockets}")
+        print("ABOUT TO START SASA LOOP")
+        
+        for i, pocket in enumerate(ranked_pockets):
+            print(f"ENTERING POCKET {i}")
+            print(f"  - pocket type: {type(pocket)}, len: {len(pocket)}")
+            print(f"  - tetra_positions shape: {tetra_positions.shape}")
+            print(f"  - protein_coords shape: {protein_coords.shape}")
+            print(f"  - pdb_path: {pdb_path}")
+            print("  - ABOUT TO CALL compute_pocket_sasa")
+            
+            try:
+                sasa = compute_pocket_sasa(
+                    pocket_tetra_indices=pocket,
+                    tetra_positions=tetra_positions,
+                    protein_coords=protein_coords,
+                    pdb_file=pdb_path,
+                    probe_radius=cfg.SASA_PROBE_RADIUS,
+                )
+                print(f"DEBUG: SASA computed for pocket {i+1}: {sasa}")
+                pocket_sasa.append(sasa)
+                print(f"Pocket {i+1}: SASA = {sasa:.2f} Å²")
+            except Exception as e:
+                print(f"Failed to compute SASA for pocket {i+1}: {e}")
+                import traceback
+                traceback.print_exc()
+                pocket_sasa.append(0.0)
+        
+        print("SASA LOOP COMPLETED")
+        
+    except Exception as e:
+        print(f"FATAL ERROR in SASA computation: {e}")
+        import traceback
+        traceback.print_exc()
+        pocket_sasa = [0.0] * len(ranked_pockets)
+
+    result["pocket_sasa"] = pocket_sasa
 
     try:
         stability_info = alpha_stability(
@@ -436,6 +481,7 @@ def process_pdb(pdb_path):
             simplices=simplices,
             tetra_positions=tetra_positions,
             molecule_name=base,
+            radii=radii,
             base_alpha=None,
             alpha_offsets=[-0.2, -0.1, 0.0, 0.1, 0.2],
             min_volume_threshold=cfg.get_min_pocket_volume(),
@@ -478,8 +524,8 @@ def process_pdb(pdb_path):
     result.update(
         {
             "ranked_pockets": ranked_pockets,
-            "representative_points": representative_pts,
-            "ranking_scores": ranking_scores,
+            # "representative_points": representative_pts,  # BUG: not defined
+            "ranking_scores": [c.scores for c in candidates],
             "pocket_features": [c.features for c in candidates],
             "pocket_scores": [c.scores for c in candidates],
         }

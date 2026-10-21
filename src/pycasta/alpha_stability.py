@@ -41,7 +41,10 @@ def _single_alpha_run(
     flow_params=None,
     merge_clusters=None,
     merge_threshold=None,
+    radii=None,
 ):
+    import traceback
+    
     if min_volume_threshold is None:
         min_volume_threshold = cfg.MIN_POCKET_VOLUME
     if flow_params is None:
@@ -51,87 +54,101 @@ def _single_alpha_run(
     if merge_threshold is None:
         merge_threshold = cfg.get_merge_threshold()
 
-    alpha_mask, local_radii, local_tetra_positions, local_simplices = (
-        compute_alpha_complex_from_tetrahedra(
-            simplices=simplices.copy(),
-            tetra_positions=tetra_positions.copy(),
-            alpha_value=alpha_value,
-            molecule_name=molecule_name,
-            protein_coords=protein_coords,
-            save_alpha_data=False,
+    try:
+        logging.info(f"[alpha_stability] Calling compute_alpha_complex_from_tetrahedra with radii shape: {radii.shape if radii is not None else None}")
+        
+        alpha_mask, local_radii, local_tetra_positions, local_simplices = (
+            compute_alpha_complex_from_tetrahedra(
+                simplices=simplices.copy(),
+                tetra_positions=tetra_positions.copy(),
+                alpha_value=alpha_value,
+                molecule_name=molecule_name,
+                protein_coords=protein_coords,
+                radii=radii,
+                filter_by_sasa=False,
+                pdb_file=None,
+                save_alpha_data=False,
+            )
         )
-    )
+        
+        logging.info(f"[alpha_stability] alpha_mask shape: {alpha_mask.shape}, local_radii shape: {local_radii.shape if hasattr(local_radii, 'shape') else type(local_radii)}")
+        
+        if np.sum(alpha_mask) == 0:
+            return {
+                "alpha": float(alpha_value),
+                "num_alpha_tetrahedra": 0,
+                "num_preliminary_pockets": 0,
+                "num_final_pockets": 0,
+                "volumes": [],
+                "top_signature": tuple(),
+                "mean_volume": 0.0,
+                "max_volume": 0.0,
+            }
 
-    if np.sum(alpha_mask) == 0:
-        return {
-            "alpha": float(alpha_value),
-            "num_alpha_tetrahedra": 0,
-            "num_preliminary_pockets": 0,
-            "num_final_pockets": 0,
-            "volumes": [],
-            "top_signature": tuple(),
-            "mean_volume": 0.0,
-            "max_volume": 0.0,
-        }
-
-    # Use the same radii that were used for alpha filtering
-    # (circumradii for standard Delaunay, power radii for weighted Delaunay)
-    pockets, flow_steps, connectivity_graph = flow_detection(
-        simplices,
-        alpha_mask,
-        tetra_positions,
-        protein_coords,
-        flow_params,
-        proxy_values=radii,  # radii is already computed earlier in this function
-    )
-
-    max_index = len(protein_coords) - 1
-    valid_pockets = [p for p in pockets if all(0 <= idx <= max_index for idx in p)]
-
-    if merge_clusters:
-        valid_pockets = merge_nearby_clusters(
-            valid_pockets,
+        logging.info(f"[alpha_stability] Calling flow_detection with proxy_values shape: {local_radii.shape if hasattr(local_radii, 'shape') else type(local_radii)}")
+        
+        pockets, flow_steps, connectivity_graph = flow_detection(
+            local_simplices,
+            alpha_mask,
             local_tetra_positions,
-            merge_threshold,
+            protein_coords,
+            flow_params,
+            proxy_values=local_radii,
         )
+        
+        logging.info(f"[alpha_stability] flow_detection returned {len(pockets)} pockets")
 
-    pocket_volumes = [
-        compute_analytic_pocket_volume(local_tetra_positions, pocket)
-        for pocket in valid_pockets
-    ]
+        max_index = len(protein_coords) - 1
+        valid_pockets = [p for p in pockets if all(0 <= idx <= max_index for idx in p)]
 
-    filtered = [
-        (pocket, volume)
-        for pocket, volume in zip(valid_pockets, pocket_volumes)
-        if volume >= min_volume_threshold
-    ]
+        if merge_clusters:
+            valid_pockets = merge_nearby_clusters(
+                valid_pockets,
+                local_tetra_positions,
+                merge_threshold,
+            )
 
-    if not filtered:
+        pocket_volumes = [
+            compute_analytic_pocket_volume(local_tetra_positions, pocket)
+            for pocket in valid_pockets
+        ]
+
+        filtered = [
+            (pocket, volume)
+            for pocket, volume in zip(valid_pockets, pocket_volumes)
+            if volume >= min_volume_threshold
+        ]
+
+        if not filtered:
+            return {
+                "alpha": float(alpha_value),
+                "num_alpha_tetrahedra": int(np.sum(alpha_mask)),
+                "num_preliminary_pockets": len(valid_pockets),
+                "num_final_pockets": 0,
+                "volumes": [],
+                "top_signature": tuple(),
+                "mean_volume": 0.0,
+                "max_volume": 0.0,
+            }
+
+        _, filtered_volumes = zip(*filtered)
+        filtered_volumes = list(filtered_volumes)
+
         return {
             "alpha": float(alpha_value),
             "num_alpha_tetrahedra": int(np.sum(alpha_mask)),
             "num_preliminary_pockets": len(valid_pockets),
-            "num_final_pockets": 0,
-            "volumes": [],
-            "top_signature": tuple(),
-            "mean_volume": 0.0,
-            "max_volume": 0.0,
+            "num_final_pockets": len(filtered_volumes),
+            "volumes": _round_float_list(filtered_volumes, 4),
+            "top_signature": _top_volume_signature(filtered_volumes, top_k=3, decimals=1),
+            "mean_volume": float(np.mean(filtered_volumes)),
+            "max_volume": float(np.max(filtered_volumes)),
         }
-
-    _, filtered_volumes = zip(*filtered)
-    filtered_volumes = list(filtered_volumes)
-
-    return {
-        "alpha": float(alpha_value),
-        "num_alpha_tetrahedra": int(np.sum(alpha_mask)),
-        "num_preliminary_pockets": len(valid_pockets),
-        "num_final_pockets": len(filtered_volumes),
-        "volumes": _round_float_list(filtered_volumes, 4),
-        "top_signature": _top_volume_signature(filtered_volumes, top_k=3, decimals=1),
-        "mean_volume": float(np.mean(filtered_volumes)),
-        "max_volume": float(np.max(filtered_volumes)),
-    }
-
+        
+    except Exception as e:
+        logging.error(f"[alpha_stability] Exception in _single_alpha_run: {e}")
+        logging.error(traceback.format_exc())
+        raise
 
 def alpha_stability(
     protein_coords,
@@ -144,6 +161,7 @@ def alpha_stability(
     flow_params=None,
     merge_clusters=None,
     merge_threshold=None,
+    radii=None,
 ):
     if base_alpha is None:
         base_alpha = cfg.get_alpha()
@@ -172,6 +190,7 @@ def alpha_stability(
             flow_params=flow_params,
             merge_clusters=merge_clusters,
             merge_threshold=merge_threshold,
+            radii=radii,
         )
         runs.append(run)
 

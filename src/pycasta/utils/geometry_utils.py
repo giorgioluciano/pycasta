@@ -4,8 +4,8 @@
 geometry_utils.py
 
 Module containing functions for:
-- Computing circumsphere radii of tetrahedra.
-- Estimating pocket volume using Monte Carlo integration.
+- Computing power radii for weighted Delaunay triangulation.
+- Estimating pocket volume using analytic formulas.
 - Validating pockets via mesh extrusion and fake sphere tests.
 """
 
@@ -149,11 +149,22 @@ def log_radii_statistics(radii):
     }
     import logging
 
-    logging.info(f"Circumsphere radii stats: {stats}")
+    logging.info(f"Power radii stats: {stats}")
     return stats
 
 
 def compute_all_circumsphere_radii(tetra_positions):
+    """
+    DEPRECATED: This function is kept for backward compatibility only.
+    For weighted Delaunay, use compute_power_radii() instead.
+    """
+    import warnings
+    warnings.warn(
+        "compute_all_circumsphere_radii() is deprecated for weighted-only mode. "
+        "Use compute_power_radii() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     radii = np.array([compute_circumsphere_radius(tetra) for tetra in tetra_positions])
     log_radii_statistics(radii)
     return radii
@@ -283,3 +294,65 @@ def compute_power_radii(tetra_indices, coords, radii):
         power_radii[i] = np.sqrt(r2)
     
     return power_radii
+
+def compute_dihedral_angles(tetra):
+    """
+    Compute all 6 dihedral angles of a tetrahedron.
+    
+    Parameters
+    ----------
+    tetra : np.ndarray, shape (4, 3)
+        Vertex coordinates of the tetrahedron.
+    
+    Returns
+    -------
+    angles : np.ndarray, shape (6,)
+        The 6 dihedral angles in radians.
+    """
+    v0, v1, v2, v3 = tetra
+    
+    # Face normals (outward)
+    n0 = np.cross(v2 - v1, v3 - v1)
+    n0 = n0 / (np.linalg.norm(n0) + 1e-12)
+    
+    n1 = np.cross(v3 - v0, v2 - v0)
+    n1 = n1 / (np.linalg.norm(n1) + 1e-12)
+    
+    n2 = np.cross(v1 - v0, v3 - v0)
+    n2 = n2 / (np.linalg.norm(n2) + 1e-12)
+    
+    n3 = np.cross(v2 - v0, v1 - v0)
+    n3 = n3 / (np.linalg.norm(n3) + 1e-12)
+    
+    # 6 dihedral angles
+    angles = np.array([
+        np.arccos(np.clip(-np.dot(n2, n3), -1.0, 1.0)),  # edge 0-1
+        np.arccos(np.clip(-np.dot(n1, n3), -1.0, 1.0)),  # edge 0-2
+        np.arccos(np.clip(-np.dot(n1, n2), -1.0, 1.0)),  # edge 0-3
+        np.arccos(np.clip(-np.dot(n0, n3), -1.0, 1.0)),  # edge 1-2
+        np.arccos(np.clip(-np.dot(n0, n2), -1.0, 1.0)),  # edge 1-3
+        np.arccos(np.clip(-np.dot(n0, n1), -1.0, 1.0)),  # edge 2-3
+    ])
+    
+    return angles
+
+
+def is_acute_tetrahedron(tetra, tolerance=1e-6):
+    """
+    Check if a tetrahedron is acute (all dihedral angles < 90°).
+    
+    Parameters
+    ----------
+    tetra : np.ndarray, shape (4, 3)
+        Vertex coordinates.
+    tolerance : float
+        Tolerance for angle comparison.
+    
+    Returns
+    -------
+    is_acute : bool
+        True if all dihedral angles < π/2.
+    """
+    angles = compute_dihedral_angles(tetra)
+    return np.all(angles < (np.pi / 2 - tolerance))
+

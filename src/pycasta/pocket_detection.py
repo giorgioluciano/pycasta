@@ -72,27 +72,37 @@ def detect_pockets(
     alpha_value = cfg.get_alpha()
 
     if alpha_mask is None or radii is None:
-        alpha_mask, radii, tetra_positions, simplices = compute_alpha_complex_from_tetrahedra(
-            simplices,
-            tetra_positions,
-            alpha_value,
-            molecule_name,
-            protein_coords,
-            radii=radii,
-            filter_by_sasa=filter_by_sasa,
-            sasa_threshold=sasa_thresold,
-            pdb_file=pdb_file,
+        alpha_mask, radii, tetra_positions, simplices = (
+            compute_alpha_complex_from_tetrahedra(
+                simplices=simplices,
+                tetra_positions=tetra_positions,
+                alpha_value=alpha_value,
+                molecule_name=molecule_name,
+                protein_coords=protein_coords,
+                radii=radii,
+                filter_by_sasa=False,
+                pdb_file=None,
+                save_alpha_data=True,
+            )
         )
 
     logging.info(f"Using alpha shape with alpha {alpha_value}")
     logging.info(
-        f"Alpha shape retained {int(np.sum(alpha_mask))} tetrahedra out of {len(alpha_mask)}."
+        f"Alpha shape retained {int(np.sum(alpha_mask))} "
+        f"tetrahedra out of {len(alpha_mask)}."
     )
+
     if np.sum(alpha_mask) == 0:
         logging.warning("Alpha shape filtered out all tetrahedra. No pockets detected.")
         return [], [], []
+
     pockets, flow_steps, connectivity_graph = flow_detection(
-        simplices, alpha_mask, tetra_positions, protein_coords, flow_params,proxy_values=radii,
+        simplices,
+        alpha_mask,
+        tetra_positions,
+        protein_coords,
+        flow_params,
+        proxy_values=radii,
     )
     logging.info(f"Flow detection found {len(pockets)} preliminary pockets.")
     valid_pockets = []

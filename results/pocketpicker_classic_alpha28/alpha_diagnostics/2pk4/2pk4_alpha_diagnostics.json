@@ -1,0 +1,264 @@
+{
+  "molecule_name": "2pk4",
+  "pdb_file": "C:\\github\\pycasta\\data\\pocketpicker\\holo\\2pk4.pdb",
+  "base_alpha": 2.8,
+  "tested_alphas": [
+    2.5,
+    2.6,
+    2.7,
+    2.8,
+    2.9,
+    3.0,
+    3.1
+  ],
+  "radii_stats": {
+    "count": 0,
+    "min": 0.0,
+    "max": 0.0,
+    "mean": 0.0,
+    "median": 0.0,
+    "std": 0.0,
+    "q05": 0.0,
+    "q25": 0.0,
+    "q50": 0.0,
+    "q75": 0.0,
+    "q95": 0.0
+  },
+  "config": {
+    "min_volume_threshold": 50.0,
+    "merge_clusters": true,
+    "merge_threshold": 10.0,
+    "filter_by_sasa": false,
+    "sasa_threshold": 0.0,
+    "flow_params": {
+      "max_steps": 100,
+      "tol_fraction": 0.01,
+      "sigma_p": 1.4,
+      "adaptive": true,
+      "adaptive_factor": 0.5,
+      "base_step_size": 3,
+      "min_steps": 3,
+      "debug": false,
+      "write_steps": false
+    }
+  },
+  "runs": [
+    {
+      "alpha": 2.5,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 18,
+      "alpha_fraction": 0.004491017964071856,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 18,
+      "num_alpha_after_graph_filter": 18,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.7779448621553884,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    },
+    {
+      "alpha": 2.6,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 18,
+      "alpha_fraction": 0.004491017964071856,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 18,
+      "num_alpha_after_graph_filter": 18,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.7779448621553884,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    },
+    {
+      "alpha": 2.7,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 19,
+      "alpha_fraction": 0.004740518962075849,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 19,
+      "num_alpha_after_graph_filter": 19,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.776385058912008,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    },
+    {
+      "alpha": 2.8,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 20,
+      "alpha_fraction": 0.00499001996007984,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 20,
+      "num_alpha_after_graph_filter": 20,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.778335005015045,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    },
+    {
+      "alpha": 2.9,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 20,
+      "alpha_fraction": 0.00499001996007984,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 20,
+      "num_alpha_after_graph_filter": 20,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.778335005015045,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    },
+    {
+      "alpha": 3.0,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 20,
+      "alpha_fraction": 0.00499001996007984,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 20,
+      "num_alpha_after_graph_filter": 20,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.778335005015045,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    },
+    {
+      "alpha": 3.1,
+      "total_tetrahedra": 4008,
+      "num_alpha_tetrahedra": 21,
+      "alpha_fraction": 0.005239520958083832,
+      "graph_filter_enabled": false,
+      "num_alpha_before_graph_filter": 21,
+      "num_alpha_after_graph_filter": 21,
+      "num_removed_from_alpha_by_graph_filter": 0,
+      "kept_fraction_by_graph_filter": 0.0,
+      "edge_ratio_mean": 0.0,
+      "edge_ratio_median": 0.0,
+      "edge_ratio_max": 0.0,
+      "max_edge_length_mean": 0.0,
+      "local_scale_mean": 0.0,
+      "num_preliminary_pockets": 9,
+      "num_merged_pockets": 1,
+      "num_final_pockets": 1,
+      "mean_flow_steps": 1.7760220717331328,
+      "max_flow_steps": 9,
+      "mean_volume": 156.93760628950005,
+      "median_volume": 156.93760628950005,
+      "max_volume": 156.93760628950005,
+      "top3_volumes": [
+        156.9376
+      ],
+      "all_volumes": [
+        156.9376
+      ]
+    }
+  ],
+  "artifacts": {
+    "csv": "C:\\github\\pycasta\\results\\pocketpicker_classic_alpha28\\alpha_diagnostics\\2pk4\\2pk4_alpha_sweep_metrics.csv",
+    "json": "C:\\github\\pycasta\\results\\pocketpicker_classic_alpha28\\alpha_diagnostics\\2pk4\\2pk4_alpha_diagnostics.json",
+    "hist_png": "C:\\github\\pycasta\\results\\pocketpicker_classic_alpha28\\alpha_diagnostics\\2pk4\\2pk4_alpha_radii_hist.png",
+    "sweep_png": "C:\\github\\pycasta\\results\\pocketpicker_classic_alpha28\\alpha_diagnostics\\2pk4\\2pk4_alpha_sweep.png",
+    "top3_png": "C:\\github\\pycasta\\results\\pocketpicker_classic_alpha28\\alpha_diagnostics\\2pk4\\2pk4_alpha_top3_volumes.png"
+  }
+}

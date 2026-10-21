@@ -31,8 +31,8 @@ from .config import (
 
 from .utils.geometry_utils import compute_all_circumsphere_radii, compute_power_radii,log_radii_statistics
 from .utils.pocket_utils import apply_splitting_to_shared_atoms
-from .utils.sasa_utils import compute_sasa
-
+# SASA utils now use FreeSASA
+# from .utils.sasa_utils import compute_sasa  # 
 
 def save_triangulation_debug_data(
     simplices,
@@ -374,121 +374,141 @@ def flow_detection(
     tetra_positions,
     protein_coords,
     flow_params=None,
-    proxy_values=None,  # NEW: precomputed radii (circum or power)
+    proxy_values=None,
 ):
     """
     Apply discrete flow on the tetrahedra to grow pockets.
-    This version uses a relative tolerance (tol_fraction) to decide if a neighbor is lower.
     
-    Parameters
+    CAST-style discrete flow on the complement of the alpha shape:
+    - Flow occurs on tetrahedra OUTSIDE the alpha shape (empty region)
+    - Tetrahedra flow towards local minima of the circumradius/power radius
+    - Sinks are local minima (deepest parts of pockets)
+    
+    This is a simplified version: instead of acute/obtuse classification,
+    we use proxy value (circumradius/power radius) gradient descent.
+    
+    References
     ----------
-    proxy_values : np.ndarray, optional
-        Precomputed proxy values (e.g., circumradii or power radii) for all tetrahedra.
-        If None, defaults to computing circumradii from tetra_positions.
+    Liang et al., "Anatomy of protein pockets and cavities", PNAS 1998
+    Binkowski et al., "CASTp: Computed Atlas of Surface Topography", NAR 2003
     """
     if flow_params is None:
-        flow_params = {}
-    sigma_p = flow_params.get("sigma_p", 1.0)
-    # Use a relative tolerance fraction (e.g., 0.01 means a 1% drop)
-    tol_fraction = flow_params.get("tol_fraction", 0.01)
-    max_steps = flow_params.get("max_steps", 100)
+        flow_params = cfg.FLOW_KWARGS
+    
+    sigmap = flow_params.get("sigmap", 1.0)
+    tolfraction = flow_params.get("tolfraction", 0.01)
+    maxsteps = flow_params.get("maxsteps", 100)
     adaptive = flow_params.get("adaptive", False)
-    adaptive_factor = flow_params.get("adaptive_factor", 0.9)
-    min_steps = flow_params.get("min_steps", 0)
-
-    # Compute proxy values for all tetrahedra (e.g., based on circumsphere radii)
+    adaptivefactor = flow_params.get("adaptivefactor", 0.9)
+    minsteps = flow_params.get("minsteps", 0)
+    
+    # Compute proxy values (circumradii) if not provided
     if proxy_values is None:
-        # Fallback: compute circumradii (classic mode)
+        from .utils.geometry_utils import compute_all_circumsphere_radii
         proxies = compute_all_circumsphere_radii(tetra_positions)
-        proxy_values = sigma_p * proxies
+        proxy_values = sigmap * proxies
     else:
-        # Use precomputed proxy values (e.g., power radii from weighted Delaunay)
-        # sigma_p is already applied if needed by the caller
-        proxy_values = np.asarray(proxy_values, dtype=float)
-
-    # Get indices of tetrahedra that are outside the alpha complex
-    empty_indices = np.where(~alpha_mask)[0]
-
-    # Build a face-to-tetrahedron mapping (neighbors sharing a face)
+        proxy_values = sigmap * proxy_values
+    
+    # Get indices of tetrahedra outside alpha complex (empty region)
+    empty_indices = np.where(alpha_mask == 0)[0]
+    
+    # Build face-to-tetrahedron mapping
     face_to_tetra = {}
     for i, simplex in enumerate(simplices):
-        faces = [
-            tuple(sorted(simplex[[a, b, c]]))
-            for (a, b, c) in [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
-        ]
-        for face in faces:
+        for face in [
+            tuple(sorted([simplex[0], simplex[1], simplex[2]])),
+            tuple(sorted([simplex[0], simplex[1], simplex[3]])),
+            tuple(sorted([simplex[0], simplex[2], simplex[3]])),
+            tuple(sorted([simplex[1], simplex[2], simplex[3]])),
+        ]:
             face_to_tetra.setdefault(face, []).append(i)
-
-    # Build neighbor dictionary for each empty tetrahedron
+    
+    # Build neighbor dictionary for empty tetrahedra
     neighbor_dict = {}
     for i in empty_indices:
         faces = [
-            tuple(sorted(simplices[i, [a, b, c]]))
-            for (a, b, c) in [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+            tuple(sorted([simplices[i][0], simplices[i][1], simplices[i][2]])),
+            tuple(sorted([simplices[i][0], simplices[i][1], simplices[i][3]])),
+            tuple(sorted([simplices[i][0], simplices[i][2], simplices[i][3]])),
+            tuple(sorted([simplices[i][1], simplices[i][2], simplices[i][3]])),
         ]
         neighbors = set()
         for face in faces:
             neighbors.update(face_to_tetra.get(face, []))
-        # Exclude the tetrahedron itself and those that are not in the empty region
-        neighbor_dict[i] = [j for j in neighbors if j != i and not alpha_mask[j]]
-
-    # Flow: for each tetrahedron in empty_indices, try to follow a gradient descent
+        # Exclude self and alpha complex tetrahedra
+        neighbor_dict[i] = [
+            j for j in neighbors 
+            if j != i and not alpha_mask[j]
+        ]
+    
+    # Flow for each empty tetrahedron
     flow_target = {}
     flow_steps = {}
     total_steps = 0
-
+    
     for i in empty_indices:
         current = i
         steps = 0
         current_proxy = proxy_values[current]
-        while steps < max_steps:
-            # Use relative tolerance: neighbor qualifies if its proxy is at least tol_fraction lower than current
+        current_tolfraction = tolfraction
+        
+        while steps < maxsteps:
+            # Find neighbors with LOWER proxy value (downhill flow)
             lower_neighbors = [
-                j
-                for j in neighbor_dict[current]
-                if (current_proxy - proxy_values[j]) > tol_fraction * current_proxy
+                j for j in neighbor_dict.get(current, [])
+                if current_proxy - proxy_values[j] > current_tolfraction * current_proxy
             ]
+            
             if not lower_neighbors:
-                if adaptive:
-                    # Optionally, if no neighbor is found, increase tolerance (or adapt in some way)
-                    tol_fraction *= adaptive_factor
-                    lower_neighbors = [
-                        j
-                        for j in neighbor_dict[current]
-                        if (current_proxy - proxy_values[j])
-                        > tol_fraction * current_proxy
-                    ]
-                    if not lower_neighbors:
-                        break
+                # No downhill neighbors → this is a sink
+                if steps >= minsteps:
+                    flow_target[i] = current
                 else:
-                    break
+                    # Didn't flow enough, mark as invalid
+                    flow_target[i] = current
+                break
+            
+            # Flow to neighbor with lowest proxy value
             next_current = min(lower_neighbors, key=lambda j: proxy_values[j])
+            
+            # Update current
+            current_proxy = proxy_values[next_current]
             current = next_current
-            current_proxy = proxy_values[current]
             steps += 1
-        if steps >= min_steps:
-            flow_target[i] = current
-            flow_steps[i] = steps
-            total_steps += steps
-
+            
+            # Adaptive tolerance (optional)
+            if adaptive:
+                current_tolfraction *= adaptivefactor
+        
+        if steps >= maxsteps:
+            flow_target[i] = current  # Max steps reached
+        
+        flow_steps[i] = steps
+        total_steps += steps
+    
     average_steps = total_steps / max(len(flow_target), 1)
     logging.info(f"Average number of flow steps per tetrahedron: {average_steps:.2f}")
-
-    # Group tetrahedra by their final sink (flow target)
+    
+    # Group tetrahedra by their sink
     sink_groups = {}
     for i, sink in flow_target.items():
         sink_groups.setdefault(sink, []).append(i)
-
+    
+    # Build connected components for each sink group
     final_pockets = []
-    connectivity_graph = {}
-    # For each sink group, build a connectivity graph among tetrahedra
+    connectivity_graph = []
+    
     for sink, tetra_indices in sink_groups.items():
+        # Build connectivity graph (tetrahedra sharing a face)
         graph = {i: [] for i in tetra_indices}
         for idx, i in enumerate(tetra_indices):
-            for j in tetra_indices[idx + 1 :]:
+            for j in tetra_indices[idx + 1:]:
                 if len(set(simplices[i]) & set(simplices[j])) == 3:
                     graph[i].append(j)
                     graph[j].append(i)
+        
+        # Find connected components
         visited = set()
         for node in tetra_indices:
             if node not in visited:
@@ -501,10 +521,12 @@ def flow_detection(
                         component.append(cur)
                         stack.extend(graph[cur])
                 final_pockets.append(component)
-                connectivity_graph[len(final_pockets) - 1] = graph
-
+        
+        connectivity_graph.append(graph)
     
-    final_pockets = apply_splitting_to_shared_atoms(
-        final_pockets, protein_coords, flow_params.get("atom_radii")
-    )
+    # Apply splitting for shared atoms
+    from .utils.pocket_utils import apply_splitting_to_shared_atoms
+    atom_radii = flow_params.get("atom_radii")
+    final_pockets = apply_splitting_to_shared_atoms(final_pockets, protein_coords, atom_radii)
+    
     return final_pockets, flow_steps, connectivity_graph

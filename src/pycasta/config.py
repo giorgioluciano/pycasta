@@ -1,4 +1,5 @@
-# config.py - versione pulita
+# config.py - weighted Delaunay only
+# Standard (unweighted) Delaunay support has been removed.
 from pathlib import Path
 
 # Alpha e merge (parametri runtime modificabili)
@@ -24,10 +25,11 @@ CONNECTIVITY_THRESHOLD = 1
 USE_CGAL = False
 
 
-# SASA (solo per validazione, non filtering)
+# ============================================
+# SASA Configuration (Richards surface, 1977)
+# ============================================
+SASA_PROBE_RADIUS = 1.4  # Å, standard water probe
 SASA_METHOD = "freesasa"
-FILTER_ALPHA_BY_SASA = False
-SASA_THRESHOLD = 0
 
 # Atom splitting
 ATOM_SPLITTING = True
@@ -128,3 +130,21 @@ def set_min_pocket_volume(value):
 def reset_min_pocket_volume():
     global _current_min_pocket_volume
     _current_min_pocket_volume = None
+
+# Filtri per AlphaShape
+FILTER_ALPHA_BY_SASA = False
+
+
+# =============================================================================
+# Ranking weights
+# =============================================================================
+VOLUME_WEIGHT = 0.4
+FLOW_WEIGHT = 0.3
+CONNECTIVITY_WEIGHT = 0.2
+SASA_WEIGHT = 0.1
+
+# SASA parameters
+SASA_PROBE_RADIUS = 1.4  # Angstrom
+SASA_N_SPHERES = 100
+SASA_THRESHOLD = 0.0  # Soglia minima SASA per pocket
+

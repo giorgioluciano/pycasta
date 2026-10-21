@@ -147,9 +147,9 @@ def _run_single_alpha_diagnostics(
             alpha_value=alpha_value,
             molecule_name=molecule_name,
             protein_coords=protein_coords,
-            filter_by_sasa=filter_by_sasa,
-            sasa_threshold=sasa_threshold,
-            pdb_file=pdb_file,
+            radii=radii,
+            filter_by_sasa=False,
+            pdb_file=None,
             save_alpha_data=False,
         )
     )
@@ -293,12 +293,12 @@ def _run_single_alpha_diagnostics(
     # Use the same radii that were used for alpha filtering
     # (circumradii for standard Delaunay, power radii for weighted Delaunay)
     pockets, flow_steps, connectivity_graph = flow_detection(
-        simplices,
+        local_simplices,
         alpha_mask,
-        tetra_positions,
+        local_tetra_positions,
         protein_coords,
         flow_params,
-        proxy_values=radii,  # radii is already computed earlier in this function
+        proxy_values=local_radii,
     )
 
     max_index = len(protein_coords) - 1
@@ -388,12 +388,11 @@ def _save_radii_histogram(radii, alpha_values, out_png, title):
     plt.xlabel("Circumsphere radius")
     plt.ylabel("Count")
     plt.title(title)
-    if len(alpha_values) <= 10:
+    if radii.size > 0 and len(alpha_values) <= 10:  # <-- FIX: aggiungi radii.size > 0
         plt.legend()
     plt.tight_layout()
     plt.savefig(out_png, dpi=180)
     plt.close()
-
 
 def _save_alpha_sweep_plot(df, out_png, title):
     if df.empty:
@@ -478,13 +477,8 @@ def run_alpha_diagnostics(
     if merge_threshold is None:
         merge_threshold = cfg.get_merge_threshold()
 
-    try:
-        from .utils.geometry_utils import compute_all_circumsphere_radii
-        raw_radii = compute_all_circumsphere_radii(tetra_positions)
-    except Exception as e:
-        logging.warning(f"[alpha_diagnostics] Could not compute raw radii separately: {e}")
-        raw_radii = np.array([], dtype=float)
-
+    # For weighted-only, skip raw_radii computation (not needed)
+    raw_radii = np.array([], dtype=float)
     stats = _compute_histogram_stats(raw_radii)
     alpha_grid = _alpha_grid_from_base(
         base_alpha=base_alpha,
