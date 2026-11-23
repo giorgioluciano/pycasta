@@ -385,20 +385,6 @@ def process_pdb(pdb_path):
         pdb_file=pdb_path,
     )
 
-    # Alpha shape
-    logging.info("Computing alpha shape...")
-    alpha = cfg.get_alpha()
-    logging.info(f"Alpha = {alpha}")
-    alpha_mask, radii, tetra_positions, simplices = compute_alpha_complex_from_tetrahedra(
-        simplices,
-        tetra_positions,
-        alpha,
-        base,
-        protein_coords,
-        radii=radii,
-        filter_by_sasa=cfg.FILTER_ALPHA_BY_SASA,
-        pdb_file=pdb_path,
-    )
 
     # Pocket detection
     logging.info("Detecting pockets...")
@@ -410,7 +396,7 @@ def process_pdb(pdb_path):
         min_volume_threshold=cfg.get_min_pocket_volume(),
         flow_params=cfg.FLOW_KWARGS,
         molecule_name=base,
-        radii=radii,
+        radii=power_radii,
     )
     raw_ranked_pockets = pocket_info.get("ranked_pockets", [])
 
