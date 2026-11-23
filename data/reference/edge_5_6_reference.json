@@ -1,0 +1,74 @@
+{
+  "edge": [
+    5,
+    6
+  ],
+  "region_id": 0,
+  "edge_in_alpha": true,
+  "cyclic_star": [
+    {
+      "cell_id": 9595,
+      "link_from": 2,
+      "link_to": 7,
+      "in_region": true,
+      "in_alpha": false,
+      "reaches_infinity": false,
+      "retained_before_alpha": true,
+      "eligible_after_alpha": true
+    },
+    {
+      "cell_id": 9672,
+      "link_from": 7,
+      "link_to": 8,
+      "in_region": false,
+      "in_alpha": true,
+      "reaches_infinity": false,
+      "retained_before_alpha": true,
+      "eligible_after_alpha": false
+    },
+    {
+      "cell_id": 9,
+      "link_from": 8,
+      "link_to": 174,
+      "in_region": true,
+      "in_alpha": false,
+      "reaches_infinity": false,
+      "retained_before_alpha": true,
+      "eligible_after_alpha": true
+    },
+    {
+      "cell_id": 9675,
+      "link_from": 174,
+      "link_to": 9,
+      "in_region": true,
+      "in_alpha": false,
+      "reaches_infinity": false,
+      "retained_before_alpha": true,
+      "eligible_after_alpha": true
+    },
+    {
+      "cell_id": 1093,
+      "link_from": 9,
+      "link_to": 11,
+      "in_region": false,
+      "in_alpha": true,
+      "reaches_infinity": true,
+      "retained_before_alpha": false,
+      "eligible_after_alpha": false
+    },
+    {
+      "cell_id": 9611,
+      "link_from": 11,
+      "link_to": 2,
+      "in_region": false,
+      "in_alpha": false,
+      "reaches_infinity": true,
+      "retained_before_alpha": false,
+      "eligible_after_alpha": false
+    }
+  ],
+  "pre_alpha_selected_runs": 1,
+  "post_alpha_selected_runs": 2,
+  "region_runs": 2,
+  "note": "Cycle order is combinatorial, up to reversal. This diagnoses sectors; it does not repair topology."
+}

@@ -1,0 +1,7 @@
+cell_id,link_from,link_to,in_region,in_alpha,reaches_infinity,retained_before_alpha,eligible_after_alpha
+9595,2,7,True,False,False,True,True
+9672,7,8,False,True,False,True,False
+9,8,174,True,False,False,True,True
+9675,174,9,True,False,False,True,True
+1093,9,11,False,True,True,False,False
+9611,11,2,False,False,True,False,False

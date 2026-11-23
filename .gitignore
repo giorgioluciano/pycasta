@@ -87,4 +87,12 @@ config.yaml
 output/
 src/pycasta/results/
 __pycache__/
-*.pyc
+*.pycdata/
+output_isolated_tests/
+runs/
+results/
+_attic/
+*.zip
+*.npz
+__pycache__/
+.ipynb_checkpoints/

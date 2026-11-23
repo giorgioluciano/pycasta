@@ -1,0 +1,3723 @@
+{
+  "execution_status": "completed",
+  "contact_status": "all_edge_contacts_categorized",
+  "original_CAST_equivalence_certified": false,
+  "scope_note": "Edge contacts only. Does not replace vertex-link checks or resolve original boundary-manifold assumptions.",
+  "counts": {
+    "global_pre_alpha": {
+      "removed_alpha_edge": 22,
+      "cross_region_contact": 3
+    },
+    "region_raw_boundary": {
+      "removed_alpha_edge": 221
+    }
+  },
+  "unresolved_contact_count": 0,
+  "included_mouth_edge_failure_count": 0,
+  "included_mouth_edge_failures": [],
+  "records": [
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        7,
+        8
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        10
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        7,
+        12
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        10
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        14,
+        15
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        10
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        60,
+        62
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        78,
+        81
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        195,
+        200
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        13
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        295,
+        308
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        301,
+        303
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        318,
+        319
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        319,
+        327
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        606,
+        607
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        777,
+        779
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        934,
+        935
+      ],
+      "boundary_degree": 6,
+      "in_alpha": true,
+      "regions": [
+        0,
+        4,
+        5
+      ],
+      "selected_sectors": 3,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        935,
+        1764
+      ],
+      "boundary_degree": 4,
+      "in_alpha": false,
+      "regions": [
+        0,
+        4
+      ],
+      "selected_sectors": 2,
+      "category": "cross_region_contact"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        987,
+        990
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1140,
+        1142
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        11
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1140,
+        1163
+      ],
+      "boundary_degree": 4,
+      "in_alpha": false,
+      "regions": [
+        0,
+        11
+      ],
+      "selected_sectors": 2,
+      "category": "cross_region_contact"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1142,
+        1143
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        11
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1235,
+        1237
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1296,
+        1302
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1302,
+        1303
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1303,
+        1306
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1315,
+        1317
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        9
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1315,
+        1327
+      ],
+      "boundary_degree": 4,
+      "in_alpha": false,
+      "regions": [
+        0,
+        9
+      ],
+      "selected_sectors": 2,
+      "category": "cross_region_contact"
+    },
+    {
+      "scope": "global_pre_alpha",
+      "region_id": null,
+      "edge": [
+        1507,
+        1508
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        5,
+        6
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        6,
+        7
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        7,
+        8
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0,
+        10
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        19,
+        20
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        20,
+        21
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        21,
+        22
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        60,
+        62
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        70,
+        71
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        77,
+        78
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        78,
+        79
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        78,
+        81
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        79,
+        80
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        129,
+        130
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        141,
+        144
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        144,
+        145
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        144,
+        146
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        154,
+        155
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        155,
+        156
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        165,
+        166
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        193,
+        194
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        194,
+        195
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        194,
+        197
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        221,
+        224
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        222,
+        223
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        229,
+        230
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        234,
+        236
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        236,
+        238
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        268,
+        269
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        278,
+        279
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        280,
+        281
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        292,
+        293
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        301,
+        303
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        319,
+        327
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        328,
+        331
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        337,
+        338
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        346,
+        347
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        347,
+        348
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        348,
+        355
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        350,
+        354
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        357,
+        358
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        359,
+        360
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        360,
+        363
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        367,
+        368
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        368,
+        369
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        368,
+        371
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        371,
+        373
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        387,
+        389
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        390,
+        391
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        391,
+        392
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        392,
+        398
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        459,
+        460
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        460,
+        469
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        469,
+        470
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        476,
+        478
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        478,
+        479
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        480,
+        481
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        481,
+        482
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        484,
+        486
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        525,
+        531
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        537,
+        538
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        564,
+        565
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        565,
+        566
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        565,
+        568
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        568,
+        569
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        568,
+        570
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        572,
+        575
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        575,
+        576
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        575,
+        577
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        587,
+        588
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        588,
+        589
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        588,
+        590
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        595,
+        596
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        596,
+        597
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        597,
+        598
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        620,
+        621
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        621,
+        622
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        621,
+        624
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        622,
+        623
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        622,
+        628
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        638,
+        641
+      ],
+      "boundary_degree": 6,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 3,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        643,
+        646
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        646,
+        648
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        650,
+        651
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        655,
+        656
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        670,
+        672
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        671,
+        672
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        685,
+        686
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        725,
+        726
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        726,
+        727
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        727,
+        728
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        727,
+        733
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        733,
+        734
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        734,
+        735
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        737,
+        738
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        745,
+        746
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        757,
+        758
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        769,
+        770
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        777,
+        779
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        787,
+        788
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        788,
+        791
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        795,
+        796
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        808,
+        809
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        809,
+        812
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        812,
+        814
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        819,
+        821
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        823,
+        824
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        851,
+        852
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        871,
+        872
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        897,
+        900
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        951,
+        952
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        966,
+        967
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        981,
+        982
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        987,
+        990
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1000,
+        1001
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1001,
+        1002
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1002,
+        1003
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1024,
+        1025
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1031,
+        1040
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1040,
+        1041
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1041,
+        1042
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1047,
+        1048
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1048,
+        1049
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1065,
+        1066
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1087,
+        1088
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1097,
+        1098
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1111,
+        1112
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1112,
+        1113
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1112,
+        1115
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1119,
+        1120
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1131,
+        1132
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1132,
+        1133
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1133,
+        1134
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1137,
+        1138
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1168,
+        1169
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1168,
+        1171
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1170,
+        1171
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1177,
+        1178
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1199,
+        1200
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1200,
+        1201
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1200,
+        1203
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1203,
+        1204
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1203,
+        1205
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1211,
+        1212
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1212,
+        1213
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1222,
+        1223
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1223,
+        1224
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1226,
+        1227
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1226,
+        1228
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1231,
+        1232
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1232,
+        1233
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1234,
+        1235
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1235,
+        1236
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1235,
+        1237
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1238,
+        1239
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1240,
+        1245
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1295,
+        1296
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1296,
+        1302
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1313,
+        1320
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1321,
+        1324
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1365,
+        1366
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1389,
+        1390
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1389,
+        1395
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1406,
+        1411
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1413,
+        1414
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1418,
+        1419
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1424,
+        1425
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1425,
+        1426
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1425,
+        1428
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1428,
+        1429
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1428,
+        1430
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1436,
+        1437
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1440,
+        1441
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1452,
+        1453
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1457,
+        1458
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1458,
+        1459
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1466,
+        1469
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1481,
+        1485
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1485,
+        1486
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1517,
+        1523
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1527,
+        1528
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1530,
+        1533
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1534,
+        1535
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1535,
+        1536
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1535,
+        1538
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1541,
+        1542
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1542,
+        1545
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1553,
+        1554
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1565,
+        1566
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1566,
+        1567
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1577,
+        1578
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1588,
+        1589
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1594,
+        1596
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1596,
+        1597
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1601,
+        1602
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1603,
+        1604
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1604,
+        1605
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1609,
+        1619
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1636,
+        1639
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1648,
+        1651
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1649,
+        1659
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1656,
+        1657
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1670,
+        1671
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1671,
+        1672
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1672,
+        1678
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1678,
+        1679
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1679,
+        1680
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1680,
+        1681
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1708,
+        1709
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1709,
+        1710
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1710,
+        1721
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1725,
+        1726
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1726,
+        1729
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1727,
+        1732
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1732,
+        1733
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1732,
+        1737
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1733,
+        1734
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1739,
+        1740
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1740,
+        1743
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1746,
+        1747
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1747,
+        1748
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    },
+    {
+      "scope": "region_raw_boundary",
+      "region_id": 0,
+      "edge": [
+        1756,
+        1759
+      ],
+      "boundary_degree": 4,
+      "in_alpha": true,
+      "regions": [
+        0
+      ],
+      "selected_sectors": 2,
+      "category": "removed_alpha_edge"
+    }
+  ]
+}
