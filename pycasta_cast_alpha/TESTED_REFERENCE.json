@@ -1,0 +1,12 @@
+{
+  "regions": 14,
+  "mouths": 69,
+  "comparison": {
+    "matches_reference_topology": true,
+    "differences": []
+  },
+  "samples": 32,
+  "seed": 1729,
+  "total_mc_volume_A3": 7885.890608269111,
+  "test_output": "Regions: 14; mouths: 69\nReference: {'matches_reference_topology': True, 'differences': []}\nRanking: numerical free-volume estimate\nOUTPUT: /tmp/tmpw3tf3xk5/cast_alpha_20261117_195635_530741\n"
+}
