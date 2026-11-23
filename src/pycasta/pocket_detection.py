@@ -107,7 +107,7 @@ def detect_pockets(
     logging.info(f"Flow detection found {len(pockets)} preliminary pockets.")
     valid_pockets = []
     for pocket in pockets:
-        if all(0 <= idx <= max_index for idx in pocket):
+        if all(0 <= idx < len(tetra_positions) for idx in pocket):
             valid_pockets.append(pocket)
     if merge_clusters:
         pockets = merge_nearby_clusters(valid_pockets, tetra_positions, merge_threshold)
