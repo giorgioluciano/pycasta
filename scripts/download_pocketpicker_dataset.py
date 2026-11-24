@@ -20,9 +20,9 @@ pairs = [
     ("3mth", "6ins"), ("5p2p", "3p2p"), ("6rsa", "7rat"),
 ]
 
-root = Path(__file__).resolve().parent
-holo_dir = root / "data" / "pocketpicker" / "holo"
-apo_dir = root / "data" / "pocketpicker" / "apo"
+root = Path("F:/datasets/protein_pockets")
+holo_dir = root / "pocketpicker" / "holo"
+apo_dir = root / "pocketpicker" / "apo"
 holo_dir.mkdir(parents=True, exist_ok=True)
 apo_dir.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +45,7 @@ for label, entries, target_dir in (("holo", [p[0] for p in pairs], holo_dir), ("
                 out.unlink()
             print(f"ERRORE: {exc}")
 
-(root / "data" / "pocketpicker" / "pocketpicker_pairs.csv").write_text(
+(root / "pocketpicker" / "pocketpicker_pairs.csv").write_text(
     "holo_pdb,apo_pdb\n" + "\n".join(f"{h},{a}" for h, a in pairs) + "\n",
     encoding="utf-8",
 )

@@ -15,7 +15,7 @@ from biopandas.pdb import PandasPdb
 # Setup paths
 PROJECT_ROOT = Path(r"C:\github\pycasta")
 SRC_DIR = PROJECT_ROOT / "src"
-PDB_DIR = PROJECT_ROOT / "data" / "coach420" / "pdbs"
+PDB_DIR = Path("F:/datasets/protein_pockets/coach420/pdbs")
 RESULTS_DIR = PROJECT_ROOT / "results" / "coach420_full420"
 
 sys.path.insert(0, str(SRC_DIR))

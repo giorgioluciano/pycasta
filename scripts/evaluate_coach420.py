@@ -30,7 +30,7 @@ from tabulate import tabulate
 # ─────────────────────────────────────────────────
 
 RESULTS_DIR    = "results/coach420"          # cartella con i JSON del run
-GROUND_TRUTH   = "C:/github/pycasta/data/coach420/coach420_ground_truth.csv"
+GROUND_TRUTH   = "F:/datasets/protein_pockets/coach420/coach420_ground_truth.csv"
 OUTPUT_DIR     = "results/coach420_eval"
 DCA_THRESHOLD  = 4.0   # Angstrom — soglia standard letteratura
 

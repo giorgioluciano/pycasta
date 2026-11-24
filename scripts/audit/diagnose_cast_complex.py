@@ -15,7 +15,7 @@ from pycasta.utils.preprocessing_utils import (
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pdb", default=r"C:\github\pycasta\data\pocketpicker\holo\1a6w.pdb")
+    parser.add_argument("--pdb", default=r"F:\datasets\protein_pockets\pocketpicker\holo\1a6w.pdb")
     parser.add_argument("--alpha-squared", type=float, default=0.0)
     parser.add_argument("--output-root", default=r"C:\github\pycasta\output_isolated_tests")
     args = parser.parse_args()

@@ -14,7 +14,7 @@ OUTPUT_DIR = r"C:\github\pycasta\results"
 VERSION_TAG = "pocketpicker_classic_alpha28"
 
 
-BOUNDED_DIR = r"C:\github\pycasta\data\pocketpicker\holo"
+BOUNDED_DIR = r"F:\datasets\protein_pockets\pocketpicker\holo"
 UNBOUNDED_DIR = None
 DATASET_DIR = DATA_DIR
 CORRESPONDENCE_FILE = None
