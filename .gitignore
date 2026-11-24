@@ -96,3 +96,14 @@ _attic/
 *.npz
 __pycache__/
 .ipynb_checkpoints/
+data/*
+output_isolated_tests/
+runs/
+results/
+_attic/
+*.zip
+*.npz
+__pycache__/
+.ipynb_checkpoints/
+!data/reference/
+!data/reference/
