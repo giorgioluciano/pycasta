@@ -83,27 +83,16 @@ config.yaml
 *.swp
 *~
 
+# Generated outputs and local archives
+/output/
+/output_isolated_tests/
+/runs/
+/results/
+/_attic/
+/src/pycasta/results/
+*.zip
+*.npz
 
-output/
-src/pycasta/results/
-__pycache__/
-*.pycdata/
-output_isolated_tests/
-runs/
-results/
-_attic/
-*.zip
-*.npz
-__pycache__/
-.ipynb_checkpoints/
-data/*
-output_isolated_tests/
-runs/
-results/
-_attic/
-*.zip
-*.npz
-__pycache__/
-.ipynb_checkpoints/
-!data/reference/
-!data/reference/
+# Datasets excluded; reference evidence retained
+/data/*
+!/data/reference/
